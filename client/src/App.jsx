@@ -255,7 +255,7 @@ function App() {
   const [slotSpinning, setSlotSpinning] = useState(false);
   const [slotWinMessage, setSlotWinMessage] = useState('');
   
-  const chatEndRef = useRef(null);
+  const chatMessagesRef = useRef(null);
   const socketRef = useRef(null);
 
   // Verify token on mount or when token changes
@@ -440,7 +440,9 @@ function App() {
 
   // Scroll chat to bottom on new messages
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
   }, [roomState?.messages?.length]);
 
   const handleCreateRoom = (e) => {
@@ -3066,7 +3068,7 @@ function App() {
           </div>
         </div>
 
-        <div className="chat-messages">
+        <div className="chat-messages" ref={chatMessagesRef}>
           {roomState.messages.map((msg, idx) => {
             let msgClass = 'chat-msg';
             if (msg.sender === 'System') msgClass += ' system-msg';
@@ -3081,7 +3083,6 @@ function App() {
               </div>
             );
           })}
-          <div ref={chatEndRef} />
         </div>
 
         <form onSubmit={handleSendChat} className="chat-input-area">
