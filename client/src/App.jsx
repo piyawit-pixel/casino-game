@@ -428,7 +428,7 @@ function App() {
   // Scroll chat to bottom on new messages
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [roomState?.messages]);
+  }, [roomState?.messages?.length]);
 
   const handleCreateRoom = (e) => {
     e.preventDefault();
