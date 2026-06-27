@@ -12,6 +12,10 @@ import { BangRoom } from './bangRoom.js';
 import { InsiderRoom } from './insiderRoom.js';
 import { UndercoverRoom } from './undercoverRoom.js';
 import { BossRoom } from './bossRoom.js';
+import jwt from 'jsonwebtoken';
+import { registerUser, loginUser, getUserChips, saveUserChips } from './db.js';
+
+const JWT_SECRET = 'poker-online-jwt-secret-key-123';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,6 +23,44 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// API Endpoints for Authentication
+app.post('/api/register', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = await registerUser(username, password);
+    const token = jwt.sign({ username: user.username }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ success: true, token, username: user.username, chips: user.chips });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = await loginUser(username, password);
+    const token = jwt.sign({ username: user.username }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ success: true, token, username: user.username, chips: user.chips });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+app.get('/api/profile', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const chips = await getUserChips(decoded.username);
+    res.json({ success: true, username: decoded.username, chips });
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'Invalid token' });
+  }
+});
 
 const server = createServer(app);
 const io = new Server(server, {
@@ -44,9 +86,20 @@ function generateRoomId() {
 }
 
 // Function to broadcast room state to all players in the room
-function broadcastRoomState(roomId) {
+async function broadcastRoomState(roomId) {
   const room = rooms.get(roomId);
   if (!room) return;
+
+  // If this is a poker room, save player chips to database
+  if (room.constructor.name === 'Room') {
+    for (const p of room.players) {
+      try {
+        await saveUserChips(p.name, p.chips);
+      } catch (err) {
+        console.error('Failed to save user chips:', err);
+      }
+    }
+  }
 
   room.players.forEach(p => {
     // Only send the state if the player is connected
@@ -55,16 +108,33 @@ function broadcastRoomState(roomId) {
     }
   });
 }
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      socket.username = decoded.username;
+    } catch (err) {
+      console.log('Socket authentication failed:', err.message);
+    }
+  }
+  next();
+});
 
 io.on('connection', (socket) => {
   let currentRoomId = null;
   let playerProfile = null;
 
-  console.log(`Socket connected: ${socket.id}`);
+  console.log(`Socket connected: ${socket.id} (Authenticated: ${socket.username || 'No'})`);
 
   // Create a new room
-  socket.on('createRoom', ({ name, gameType }) => {
-    if (!name || name.trim() === '') {
+  socket.on('createRoom', async ({ name, gameType }) => {
+    let playerName = name ? name.trim() : '';
+    if (socket.username) {
+      playerName = socket.username;
+    }
+
+    if (!playerName || playerName === '') {
       socket.emit('errorMsg', 'Please enter a valid name.');
       return;
     }
@@ -72,19 +142,29 @@ io.on('connection', (socket) => {
     const room = gameType === 'checkers' ? new CheckersRoom(roomId) : gameType === 'coup' ? new CoupRoom(roomId) : gameType === 'uno' ? new UnoRoom(roomId) : gameType === 'bang' ? new BangRoom(roomId) : gameType === 'insider' ? new InsiderRoom(roomId) : gameType === 'undercover' ? new UndercoverRoom(roomId) : gameType === 'boss' ? new BossRoom(roomId) : new Room(roomId);
     rooms.set(roomId, room);
 
-    const player = room.addPlayer(socket.id, name.trim());
+    let initialChips = 1000;
+    if (socket.username && room.constructor.name === 'Room') {
+      initialChips = await getUserChips(socket.username);
+    }
+
+    const player = room.addPlayer(socket.id, playerName, initialChips);
     currentRoomId = roomId;
     playerProfile = player;
 
     socket.join(roomId);
     socket.emit('roomCreated', { roomId, player });
-    broadcastRoomState(roomId);
-    console.log(`Room created: ${roomId} by ${name}`);
+    await broadcastRoomState(roomId);
+    console.log(`Room created: ${roomId} by ${playerName}`);
   });
 
   // Join an existing room
-  socket.on('joinRoom', ({ roomId, name }) => {
-    if (!roomId || !name || name.trim() === '') {
+  socket.on('joinRoom', async ({ roomId, name }) => {
+    let playerName = name ? name.trim() : '';
+    if (socket.username) {
+      playerName = socket.username;
+    }
+
+    if (!roomId || !playerName || playerName === '') {
       socket.emit('errorMsg', 'Room ID and Name are required.');
       return;
     }
@@ -98,14 +178,19 @@ io.on('connection', (socket) => {
     }
 
     try {
-      const player = room.addPlayer(socket.id, name.trim());
+      let initialChips = 1000;
+      if (socket.username && room.constructor.name === 'Room') {
+        initialChips = await getUserChips(socket.username);
+      }
+
+      const player = room.addPlayer(socket.id, playerName, initialChips);
       currentRoomId = cleanRoomId;
       playerProfile = player;
 
       socket.join(cleanRoomId);
       socket.emit('roomJoined', { roomId: cleanRoomId, player });
-      broadcastRoomState(cleanRoomId);
-      console.log(`Player ${name} joined Room: ${cleanRoomId}`);
+      await broadcastRoomState(cleanRoomId);
+      console.log(`Player ${playerName} joined Room: ${cleanRoomId}`);
     } catch (err) {
       socket.emit('errorMsg', err.message);
     }

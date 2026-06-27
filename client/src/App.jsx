@@ -30,6 +30,49 @@ const DISPLAY_RANKS = {
   'T': '10', 'J': 'J', 'Q': 'Q', 'K': 'K', 'A': 'A'
 };
 
+const GAME_DETAILS = {
+  poker: {
+    title: "♣️ เท็กซัส โฮลเด็ม โป๊กเกอร์ (Texas Hold'em)",
+    players: "2 - 8 คน",
+    description: "ผู้เล่นแต่ละคนได้รับไพ่โฮลการ์ด (Hole cards) 2 ใบ และใช้ไพ่กองกลาง (Community cards) 5 ใบร่วมกันเพื่อสร้างชุดไพ่ที่ดีที่สุด 5 ใบ ในแต่ละรอบ (Pre-flop, Flop, Turn, River) ผู้เล่นสามารถหมอบ (Fold), ผ่าน (Check), สู้ (Call) หรือเกทับ (Raise) เพื่อแย่งชิงชิปกองกลางทั้งหมด",
+  },
+  checkers: {
+    title: "🏁 หมากฮอสไทย (Thai Checkers)",
+    players: "2 คน",
+    description: "ผลัดกันเดินหมากของตัวเองในแนวทแยงมุมไปด้านหน้าเพื่อเดินกินหมากของคู่แข่ง หากเดินไปถึงสุดกระดานฝั่งตรงข้ามจะถูกโปรโมทเป็นฮอส (King) ซึ่งสามารถเดินทแยงได้ไกลในทุกทิศทาง ฝ่ายที่สามารถกินหมากคู่แข่งจนหมดหรือกักไม่ให้คู่แข่งขยับได้จะเป็นผู้ชนะ",
+  },
+  coup: {
+    title: "👑 โค่นอำนาจ (Coup)",
+    players: "2 - 6 คน",
+    description: "เกมบลัฟและหักหลังทางสังคม ผู้เล่นแต่ละคนมีไพ่อิทธิพลลับ 2 ใบ (ดยุก, นักฆ่า, กัปตัน, ทูต, คอนเตส) สามารถอ้างและใช้ความสามารถของการ์ดใบใดก็ได้ตามต้องการ (ไม่ว่าจะมีอยู่จริงหรือไม่) แต่ถ้าโดนจับโกหก (Challenge) สำเร็จ จะต้องเสียการ์ดไป 1 ใบ ใครเหลือรอดเป็นคนสุดท้ายชนะ",
+  },
+  uno: {
+    title: "🎴 อูโน่ ไร้ความปรานี (UNO No Mercy)",
+    players: "2 - 10 คน",
+    description: "เกมการ์ดจับคู่สีหรือสัญลักษณ์ที่มีบทลงโทษสะสมจั่วไพ่สุดทารุณ (+2, +4, +6, +10) หากมีคนเล่นการ์ดสะสมโทษ คุณต้องเล่นการ์ดโทษที่สูงกว่าหรือเท่ากันเพื่อผ่านโทษไปหาคนถัดไป ไม่อย่างนั้นต้องยอมรับและจั่วไพ่ตามยอดสะสม เมื่อการ์ดในมือเหลือ 1 ใบ ต้องประกาศ \"UNO\" ใครไพ่หมดมือก่อนเป็นผู้ชนะ",
+  },
+  bang: {
+    title: "🤠 นายอำเภอดวลปืน (BANG! Cowboy)",
+    players: "4 - 7 คน",
+    description: "บอร์ดเกมคาวบอยแบ่งบทบาทลับ: นายอำเภอ (Sheriff) ต้องกำจัดกลุ่มนอกกฎหมายและคนทรยศ; ผู้ช่วย (Deputy) ต้องปกป้องนายอำเภอ; กลุ่มนอกกฎหมาย (Outlaw) ต้องสังหารนายอำเภอ; คนทรยศ (Renegade) ต้องฆ่าทุกคนเพื่อเป็นผู้รอดชีวิตคนสุดท้าย ใช้การ์ด BANG! ยิงใส่ผู้เล่นในระยะปืน และ MISSED! เพื่อหลบกระสุน",
+  },
+  insider: {
+    title: "🕵️ จับโกหกคนวงใน (Insider)",
+    players: "4 - 8 คน",
+    description: "ผู้เล่นช่วยกันสืบหาคำปริศนาจาก Master โดยถามคำถามที่มีคำตอบเป็น ใช่/ไม่ใช่/ไม่เกี่ยวข้อง ภายในเวลาจำกัด แต่ในกลุ่มจะมี \"Insider\" (คนวงใน) ที่รู้คำปริศนาอยู่แล้ว คอยปั่นหรือชี้ทางให้เดาถูกอย่างแนบเนียน เมื่อคำปริศนาถูกเดาได้ ทุกคนจะต้องมาโหวตหาว่าใครคือ Insider เพื่อตัดสินชัยชนะ",
+  },
+  undercover: {
+    title: "🕵️‍♂️ สายลับประลองรหัสลับ (Undercover)",
+    players: "3 - 10 คน",
+    description: "ผู้เล่นทุกคนจะได้รับการ์ดคำศัพท์ลับที่คล้ายคลึงกัน (เช่น \"สุนัข\" และ \"แมว\") ยกเว้น Mr. White ที่จะไม่ได้รับคำศัพท์ใดๆ เลย ทุกคนจะต้องอธิบายคำศัพท์ของตนทีละคนโดยห้ามทับศัพท์ เพื่อให้ Civilian รู้พวกเดียวกัน และจับโหวตคัด Undercover หรือ Mr. White ออกจนหมด ฝั่ง Civilian ชนะ แต่ถ้า Mr. White ทายคำศัพท์ของ Civilian ได้ ฝั่งสปายจะพลิกชนะ",
+  },
+  boss: {
+    title: "💼 อย่าซ่ากับบอส (I'm the Boss!)",
+    players: "3 - 6 คน",
+    description: "เกมการ์ดเจรจาธุรกิจ บอสประจำเทิร์นจะเลือกลงทุนดีลที่มีมูลค่าหุ้นแตกต่างกัน และต้องชวนผู้เล่นที่มีการ์ดหุ้นร่วมตามเงื่อนไขดีลเข้ามาร่วมงาน เพื่อตกลงแบ่งสัดส่วนรางวัลกัน แต่ผู้เล่นคนอื่นสามารถเล่นการ์ดส่งคนไปเที่ยว ขัดขวาง หรือส่งการ์ดบอสมาเปลี่ยนตัวเองเป็นบอสดีลเพื่อคุมเกมแทน เมื่อเล่นครบ 10 รอบดีล ใครมีเงินมากที่สุดชนะ",
+  }
+};
+
 function Card({ rank, suit, isMini = false, isDealt = false }) {
   if (!rank || !suit) {
     return <div className={`poker-card card-back ${isDealt ? 'animate-deal' : ''}`} />;
@@ -180,6 +223,15 @@ function renderPlayerAvatar(player, isDealer = false) {
 
 function App() {
   const [socket, setSocket] = useState(null);
+  const [chatCollapsed, setChatCollapsed] = useState(false);
+  const [showRulesModal, setShowRulesModal] = useState(false);
+  const [token, setToken] = useState(localStorage.getItem('user_token') || null);
+  const [userProfile, setUserProfile] = useState(null); // { username, chips }
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+  const [authUsername, setAuthUsername] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [lobbyTab, setLobbyTab] = useState('auth'); // 'auth' | 'guest'
   const [roomIdInput, setRoomIdInput] = useState('');
   const [name, setName] = useState('');
   const [joined, setJoined] = useState(false);
@@ -206,10 +258,81 @@ function App() {
   const chatEndRef = useRef(null);
   const socketRef = useRef(null);
 
+  // Verify token on mount or when token changes
+  useEffect(() => {
+    if (!token) {
+      setUserProfile(null);
+      return;
+    }
+    const fetchProfile = async () => {
+      try {
+        const socketUrl = import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin;
+        const res = await fetch(`${socketUrl}/api/profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          setUserProfile({ username: data.username, chips: data.chips });
+          setName(data.username); // Pre-fill guest name state for system
+        } else {
+          localStorage.removeItem('user_token');
+          setToken(null);
+        }
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+      }
+    };
+    fetchProfile();
+  }, [token]);
+
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    if (!authUsername.trim() || !authPassword.trim()) {
+      setAuthError('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
+      return;
+    }
+    try {
+      const socketUrl = import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin;
+      const endpoint = authMode === 'login' ? '/api/login' : '/api/register';
+      const res = await fetch(`${socketUrl}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: authUsername, password: authPassword })
+      });
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem('user_token', data.token);
+        setToken(data.token);
+        setUserProfile({ username: data.username, chips: data.chips });
+        setName(data.username);
+        setAuthUsername('');
+        setAuthPassword('');
+      } else {
+        setAuthError(data.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      }
+    } catch (err) {
+      setAuthError('เซิร์ฟเวอร์ขัดข้อง กรุณาลองใหม่ภายหลัง');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user_token');
+    setToken(null);
+    setUserProfile(null);
+    setName('');
+  };
+
   // Initialize Socket.io connection
   useEffect(() => {
     const socketUrl = import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin;
-    const newSocket = io(socketUrl);
+    const newSocket = io(socketUrl, {
+      auth: {
+        token: token
+      }
+    });
     setSocket(newSocket);
     socketRef.current = newSocket;
 
@@ -300,7 +423,7 @@ function App() {
     return () => {
       newSocket.disconnect();
     };
-  }, []);
+  }, [token]);
 
   // Scroll chat to bottom on new messages
   useEffect(() => {
@@ -721,80 +844,248 @@ function App() {
       <div className="lobby-container">
         <div className="lobby-card glass">
           <h1 className="lobby-title animate-float">🎲 TABLETOP FRIENDS 👑</h1>
-          <p className="lobby-subtitle">ห้องรวมบอร์ดเกมออนไลน์ เล่นสนุกกับกลุ่มเพื่อนแบบพรีเมียม</p>
+          <p className="lobby-subtitle" style={{ marginBottom: '24px' }}>ห้องรวมบอร์ดเกมออนไลน์ เล่นสนุกกับกลุ่มเพื่อนแบบพรีเมียม</p>
 
-          {errorMsg && <div style={{ color: 'var(--accent)', marginBottom: '16px', fontSize: '0.9rem', fontWeight: 'bold' }}>{errorMsg}</div>}
+          {errorMsg && <div style={{ color: 'var(--accent)', marginBottom: '16px', fontSize: '0.9rem', fontWeight: 'bold', background: 'rgba(255,71,87,0.1)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,71,87,0.2)' }}>{errorMsg}</div>}
 
-          <form onSubmit={handleCreateRoom}>
-            <div className="form-group">
-              <label className="form-label">ชื่อผู้เล่น (Player Name)</label>
-              <input 
-                id="player-name-input"
-                type="text" 
-                className="form-input" 
-                placeholder="เช่น สมชาย" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                maxLength={12}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="game-select-input">เลือกเกมที่ต้องการเล่น (Select Game)</label>
-              <select 
-                id="game-select-input"
-                className="form-input" 
-                value={gameType}
-                onChange={(e) => setGameType(e.target.value)}
+          {/* User Profile Bar (If Logged In) */}
+          {userProfile ? (
+            <div className="lobby-user-profile glass" style={{ padding: '16px', borderRadius: '12px', marginBottom: '24px', border: '1px solid rgba(255, 183, 3, 0.25)', background: 'rgba(255, 183, 3, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>บัญชีผู้เล่น</div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary)', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                  <span>👤</span> {userProfile.username}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#2ed573', marginTop: '4px', fontWeight: 'bold' }}>
+                  🪙 ชิปสะสม: {userProfile.chips.toLocaleString()} ชิป
+                </div>
+              </div>
+              <button 
+                type="button"
+                className="host-btn" 
+                onClick={handleLogout} 
                 style={{ 
-                  background: 'rgba(22, 17, 13, 0.95)', 
-                  border: '1px solid rgba(255, 183, 3, 0.25)', 
-                  color: 'var(--text-primary)',
-                  fontSize: '0.95rem',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
+                  background: 'rgba(255, 71, 87, 0.15)', 
+                  border: '1px solid rgba(255, 71, 87, 0.3)', 
+                  color: '#ff4757', 
+                  padding: '8px 14px', 
+                  borderRadius: '8px', 
+                  fontSize: '0.8rem', 
                   cursor: 'pointer',
-                  width: '100%',
-                  outline: 'none'
+                  fontWeight: 'bold',
+                  boxShadow: 'none'
                 }}
               >
-                <option value="poker" style={{ background: '#221913', color: '#fff' }}>♣️ เท็กซัส โฮลเด็ม โป๊กเกอร์ (Texas Hold'em)</option>
-                <option value="checkers" style={{ background: '#221913', color: '#fff' }}>🏁 หมากฮอสไทย (Thai Checkers)</option>
-                <option value="coup" style={{ background: '#221913', color: '#fff' }}>👑 โค่นอำนาจ (Coup - Social Deduction)</option>
-                <option value="uno" style={{ background: '#221913', color: '#fff' }}>🎴 อูโน่ ไร้ความปรานี (UNO No Mercy)</option>
-                <option value="bang" style={{ background: '#221913', color: '#fff' }}>🤠 นายอำเภอดวลปืน (BANG! Cowboy)</option>
-                <option value="insider" style={{ background: '#221913', color: '#fff' }}>🕵️ จับโกหกคนวงใน (Insider)</option>
-                <option value="undercover" style={{ background: '#221913', color: '#fff' }}>🕵️‍♂️ สายลับประลองรหัสลับ (Undercover)</option>
-                <option value="boss" style={{ background: '#221913', color: '#fff' }}>💼 อย่าซ่ากับบอส (I'm the Boss!)</option>
-              </select>
+                🚪 ออกจากระบบ
+              </button>
             </div>
-            
-            <button id="create-room-btn" type="submit" className="btn-primary">
-              สร้างห้องใหม่ (Create Room)
-            </button>
-          </form>
-
-          <div className="divider">หรือเข้าร่วมห้องที่มีอยู่</div>
-
-          <form onSubmit={handleJoinRoom}>
-            <div className="form-group">
-              <label className="form-label">รหัสห้อง (Room Code)</label>
-              <input 
-                id="room-code-input"
-                type="text" 
-                className="form-input" 
-                placeholder="ใส่รหัสห้อง 4 หลัก เช่น ABCD" 
-                value={roomIdInput} 
-                onChange={(e) => setRoomIdInput(e.target.value.toUpperCase())} 
-                maxLength={4}
-              />
+          ) : (
+            /* Tab Bar (If NOT Logged In) */
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'rgba(0,0,0,0.3)', padding: '5px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <button 
+                type="button" 
+                onClick={() => { setLobbyTab('auth'); setAuthError(''); }} 
+                style={{ 
+                  flex: 1, 
+                  padding: '10px 0', 
+                  borderRadius: '8px', 
+                  border: 'none', 
+                  background: lobbyTab === 'auth' ? 'var(--primary)' : 'transparent', 
+                  color: lobbyTab === 'auth' ? '#000' : 'var(--text-muted)', 
+                  fontWeight: 'bold', 
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                🔑 ล็อกอิน / สมัครสมาชิก
+              </button>
+              <button 
+                type="button" 
+                onClick={() => { setLobbyTab('guest'); setAuthError(''); }} 
+                style={{ 
+                  flex: 1, 
+                  padding: '10px 0', 
+                  borderRadius: '8px', 
+                  border: 'none', 
+                  background: lobbyTab === 'guest' ? 'var(--primary)' : 'transparent', 
+                  color: lobbyTab === 'guest' ? '#000' : 'var(--text-muted)', 
+                  fontWeight: 'bold', 
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                👤 เล่นแบบทั่วไป (Guest)
+              </button>
             </div>
-            
-            <button id="join-room-btn" type="submit" className="btn-secondary">
-              เข้าร่วมห้อง (Join Room)
-            </button>
-          </form>
+          )}
+
+          {/* Form Blocks */}
+          {!userProfile && lobbyTab === 'auth' ? (
+            /* Login/Register Form */
+            <form onSubmit={handleAuthSubmit} style={{ textAlign: 'left' }}>
+              <h3 style={{ fontSize: '1rem', color: 'var(--primary)', marginBottom: '14px', fontWeight: 'bold' }}>
+                {authMode === 'login' ? '🔑 เข้าสู่ระบบสมาชิก' : '📝 สมัครสมาชิกใหม่'}
+              </h3>
+              
+              {authError && (
+                <div style={{ color: '#ff4757', background: 'rgba(255,71,87,0.1)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,71,87,0.2)', marginBottom: '14px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                  ⚠️ {authError}
+                </div>
+              )}
+
+              <div className="form-group">
+                <label className="form-label">ชื่อผู้ใช้ (Username)</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="กรอกชื่อผู้ใช้..." 
+                  value={authUsername} 
+                  onChange={(e) => setAuthUsername(e.target.value.replace(/\s+/g, ''))} 
+                  maxLength={12}
+                  required
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label className="form-label">รหัสผ่าน (Password)</label>
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  placeholder="กรอกรหัสผ่าน..." 
+                  value={authPassword} 
+                  onChange={(e) => setAuthPassword(e.target.value)} 
+                  required
+                />
+              </div>
+
+              <button type="submit" className="btn-primary" style={{ marginBottom: '14px' }}>
+                {authMode === 'login' ? 'เข้าสู่ระบบ (Login)' : 'ยืนยันการสมัครสมาชิก (Register)'}
+              </button>
+
+              <div style={{ textSelf: 'center', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                <span 
+                  onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }}
+                  style={{ color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold' }}
+                >
+                  {authMode === 'login' ? 'ยังไม่มีบัญชีผู้เล่น? สมัครสมาชิกที่นี่' : 'มีบัญชีสมาชิกอยู่แล้ว? เข้าสู่ระบบ'}
+                </span>
+              </div>
+            </form>
+          ) : (
+            /* Game Lobby Form (Lobby options - Create or Join) */
+            <>
+              <form onSubmit={handleCreateRoom}>
+                {!userProfile && (
+                  <div className="form-group">
+                    <label className="form-label">ชื่อผู้เล่น (Player Name)</label>
+                    <input 
+                      id="player-name-input"
+                      type="text" 
+                      className="form-input" 
+                      placeholder="เช่น สมชาย" 
+                      value={name} 
+                      onChange={(e) => setName(e.target.value)} 
+                      maxLength={12}
+                      required
+                    />
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="game-select-input">เลือกเกมที่ต้องการเล่น (Select Game)</label>
+                  <select 
+                    id="game-select-input"
+                    className="form-input" 
+                    value={gameType}
+                    onChange={(e) => setGameType(e.target.value)}
+                    style={{ 
+                      background: 'rgba(22, 17, 13, 0.95)', 
+                      border: '1px solid rgba(255, 183, 3, 0.25)', 
+                      color: 'var(--text-primary)',
+                      fontSize: '0.95rem',
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      width: '100%',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="poker" style={{ background: '#221913', color: '#fff' }}>♣️ เท็กซัส โฮลเด็ม โป๊กเกอร์ (Texas Hold'em)</option>
+                    <option value="checkers" style={{ background: '#221913', color: '#fff' }}>🏁 หมากฮอสไทย (Thai Checkers)</option>
+                    <option value="coup" style={{ background: '#221913', color: '#fff' }}>👑 โค่นอำนาจ (Coup - Social Deduction)</option>
+                    <option value="uno" style={{ background: '#221913', color: '#fff' }}>🎴 อูโน่ ไร้ความปรานี (UNO No Mercy)</option>
+                    <option value="bang" style={{ background: '#221913', color: '#fff' }}>🤠 นายอำเภอดวลปืน (BANG! Cowboy)</option>
+                    <option value="insider" style={{ background: '#221913', color: '#fff' }}>🕵️ จับโกหกคนวงใน (Insider)</option>
+                    <option value="undercover" style={{ background: '#221913', color: '#fff' }}>🕵️‍♂️ สายลับประลองรหัสลับ (Undercover)</option>
+                    <option value="boss" style={{ background: '#221913', color: '#fff' }}>💼 อย่าซ่ากับบอส (I'm the Boss!)</option>
+                  </select>
+                </div>
+
+                {/* Selected Game Info Panel */}
+                {GAME_DETAILS[gameType] && (
+                  <div 
+                    className="glass" 
+                    style={{ 
+                      padding: '16px', 
+                      borderRadius: '10px', 
+                      marginBottom: '20px', 
+                      textAlign: 'left', 
+                      border: '1px solid var(--border-card)',
+                      background: 'rgba(0, 0, 0, 0.2)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                        {GAME_DETAILS[gameType].title}
+                      </span>
+                      <span 
+                        style={{ 
+                          fontSize: '0.75rem', 
+                          background: 'rgba(255, 183, 3, 0.15)', 
+                          color: 'var(--primary)', 
+                          padding: '2px 8px', 
+                          borderRadius: '20px',
+                          fontWeight: 'bold' 
+                        }}
+                      >
+                        👥 {GAME_DETAILS[gameType].players}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.5', margin: 0 }}>
+                      {GAME_DETAILS[gameType].description}
+                    </p>
+                  </div>
+                )}
+                
+                <button id="create-room-btn" type="submit" className="btn-primary">
+                  สร้างห้องใหม่ (Create Room)
+                </button>
+              </form>
+
+              <div className="divider">หรือเข้าร่วมห้องที่มีอยู่</div>
+
+              <form onSubmit={handleJoinRoom}>
+                <div className="form-group">
+                  <label className="form-label">รหัสห้อง (Room Code)</label>
+                  <input 
+                    id="room-code-input"
+                    type="text" 
+                    className="form-input" 
+                    placeholder="ใส่รหัสห้อง 4 หลัก เช่น ABCD" 
+                    value={roomIdInput} 
+                    onChange={(e) => setRoomIdInput(e.target.value.toUpperCase())} 
+                    maxLength={4}
+                  />
+                </div>
+                
+                <button id="join-room-btn" type="submit" className="btn-secondary">
+                  เข้าร่วมห้อง (Join Room)
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     );
@@ -853,7 +1144,7 @@ function App() {
   const canRaise = isMyTurn && myPlayer && myPlayer.chips > callAmountNeeded && maxTotalBet >= roomState.minRaise;
 
   return (
-    <div className="game-layout">
+    <div className={`game-layout ${chatCollapsed ? 'chat-collapsed' : ''}`}>
       {/* Table Area (Left Side) */}
       <div className="table-area">
         {/* Room Header Info */}
@@ -874,6 +1165,22 @@ function App() {
               {soundMuted ? '🔇 ปิดเสียง' : '🔊 เปิดเสียง'}
             </button>
           </div>
+
+          <button 
+            className="host-btn" 
+            onClick={() => setShowRulesModal(true)}
+            style={{ 
+              background: 'rgba(255, 215, 0, 0.15)', 
+              border: '1px solid rgba(255, 215, 0, 0.3)', 
+              color: 'var(--primary)', 
+              boxShadow: 'none',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              fontSize: '0.85rem'
+            }}
+          >
+            📜 วิธีเล่นและกติกา
+          </button>
 
           <button 
             id="leave-room-btn" 
@@ -921,7 +1228,8 @@ function App() {
         )}
 
         {roomState.gameType === 'checkers' ? (
-          <div className="checkers-board-wrapper">
+          <div className="table-container-wrapper">
+<div className="checkers-board-wrapper">
             {/* Checkers Info Bar */}
             <div className="checkers-info-bar">
               <div style={{ display: 'flex', gap: '16px' }}>
@@ -1036,10 +1344,12 @@ function App() {
               </div>
             )}
           </div>
+</div>
         ) : roomState.gameType === 'coup' ? (
           <>
             {/* The Coup Table container */}
-            <div className="poker-table-container">
+            <div className="table-container-wrapper">
+<div className="poker-table-container">
               <div className="coup-table">
                 {/* Event banner */}
                 {roomState.lastEvent && (
@@ -1135,6 +1445,7 @@ function App() {
                 })}
               </div>
             </div>
+</div>
 
             {/* Action Control Panel (Bottom) */}
             <div className="action-panel-container">
@@ -1157,7 +1468,8 @@ function App() {
         ) : roomState.gameType === 'uno' ? (
           <>
             {/* The UNO Table container */}
-            <div className="poker-table-container">
+            <div className="table-container-wrapper">
+<div className="poker-table-container">
               <div className="uno-table" style={{ border: `15px solid #14171f`, borderColor: roomState.currentColor ? `var(--color-${roomState.currentColor}, #14171f)` : '#14171f' }}>
                 
                 {/* Event banner */}
@@ -1276,6 +1588,7 @@ function App() {
                 })}
               </div>
             </div>
+</div>
 
             {/* Bottom active player hand */}
             <div className="uno-hand-wrapper">
@@ -1337,7 +1650,8 @@ function App() {
         ) : roomState.gameType === 'boss' ? (
           <>
             {/* The Boss Table container */}
-            <div className="poker-table-container">
+            <div className="table-container-wrapper">
+<div className="poker-table-container">
               <div className="boss-table">
                 
                 {/* Event banner */}
@@ -1481,6 +1795,7 @@ function App() {
                 })}
               </div>
             </div>
+</div>
 
             {/* Active player hand panel (Bottom) */}
             <div className="uno-hand-wrapper">
@@ -1619,7 +1934,8 @@ function App() {
         ) : roomState.gameType === 'undercover' ? (
           <>
             {/* The Undercover Table container */}
-            <div className="poker-table-container">
+            <div className="table-container-wrapper">
+<div className="poker-table-container">
               <div className="undercover-table">
                 
                 {/* Event banner */}
@@ -1739,6 +2055,7 @@ function App() {
                 })}
               </div>
             </div>
+</div>
 
             {/* Bottom panel control inputs */}
             <div className="action-panel-container">
@@ -1841,7 +2158,8 @@ function App() {
         ) : roomState.gameType === 'insider' ? (
           <>
             {/* The Insider Table container */}
-            <div className="poker-table-container">
+            <div className="table-container-wrapper">
+<div className="poker-table-container">
               <div className="insider-table">
                 
                 {/* Event banner */}
@@ -1984,6 +2302,7 @@ function App() {
                 })}
               </div>
             </div>
+</div>
 
             {/* Active player guess submission area (Bottom panel) */}
             <div className="action-panel-container">
@@ -2048,7 +2367,8 @@ function App() {
         ) : roomState.gameType === 'bang' ? (
           <>
             {/* The BANG! Table container */}
-            <div className="poker-table-container">
+            <div className="table-container-wrapper">
+<div className="poker-table-container">
               <div className="bang-table">
                 
                 {/* Event banner */}
@@ -2220,6 +2540,7 @@ function App() {
                 })}
               </div>
             </div>
+</div>
 
             {/* Active player hand panel (Bottom) */}
             <div className="uno-hand-wrapper">
@@ -2340,7 +2661,8 @@ function App() {
         ) : (
           <>
             {/* The Poker Table container */}
-            <div className="poker-table-container">
+            <div className="table-container-wrapper">
+<div className="poker-table-container">
               <div className="poker-table">
                 <div className="table-center">
                   {/* Pot display */}
@@ -2409,6 +2731,7 @@ function App() {
                 ))}
               </div>
             </div>
+</div>
 
             {/* Action Panel controls (Bottom) */}
             <div className="action-panel-container">
@@ -2524,7 +2847,15 @@ function App() {
       </div>
 
       {/* Chat Sidebar Area (Right Side) */}
-      <div className="chat-sidebar">
+      <div className={`chat-sidebar ${chatCollapsed ? 'collapsed' : ''}`} onClick={() => chatCollapsed && setChatCollapsed(false)}>
+        {chatCollapsed ? (
+          <div className="chat-collapsed-trigger">
+            <span className="chat-collapsed-icon">💬</span>
+            <span className="chat-collapsed-text">เปิดแชท (Open Chat)</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--primary)', marginTop: 'auto' }}>❮</span>
+          </div>
+        ) : (
+          <>
         {roomState.gameState === 'WAITING' && (
           <div className="lobby-customizer-panel glass" style={{ padding: '14px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--primary)', fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>
@@ -2635,7 +2966,34 @@ function App() {
 
         <div className="chat-header">
           <span>สนทนากับเพื่อน</span>
-          <span className="active-count">ออนไลน์: {roomState.players.filter(p => p.isOnline).length}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="active-count">ออนไลน์: {roomState.players.filter(p => p.isOnline).length}</span>
+            <button 
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setChatCollapsed(true);
+              }} 
+              className="chat-toggle-btn"
+              title="ย่อแชท"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '6px',
+                color: 'var(--text-muted)',
+                padding: '2px 8px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '24px',
+                width: '24px'
+              }}
+            >
+              ❯
+            </button>
+          </div>
         </div>
 
         <div className="chat-messages">
@@ -2667,7 +3025,39 @@ function App() {
           />
           <button id="chat-send-btn" type="submit" className="chat-send-btn">ส่ง</button>
         </form>
+        </>
+        )}
       </div>
+
+      {/* Rules Modal */}
+      {showRulesModal && (
+        <div className="modal-overlay" style={{ zIndex: 110 }}>
+          <div className="modal-content glass" style={{ maxWidth: '600px', maxHeight: '85vh', overflowY: 'auto' }}>
+            <h2 className="modal-title" style={{ fontSize: '1.6rem', marginBottom: '16px' }}>
+              📜 กติกาและวิธีเล่น: {GAME_DETAILS[roomState.gameType]?.title || roomState.gameType}
+            </h2>
+            
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '1.1rem' }}>👥</span>
+                <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>จำนวนผู้เล่นที่แนะนำ:</span>
+                <span style={{ color: '#fff', fontWeight: 'bold' }}>{GAME_DETAILS[roomState.gameType]?.players}</span>
+              </div>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+                {GAME_DETAILS[roomState.gameType]?.description}
+              </p>
+            </div>
+
+            <button 
+              className="btn-primary" 
+              onClick={() => setShowRulesModal(false)}
+              style={{ margin: 0, width: '100%' }}
+            >
+              ตกลง, เข้าใจแล้ว
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Showdown Results Modal (Pop up when round is SHOWDOWN) */}
       {roomState.gameState === 'SHOWDOWN' && roomState.showdownResults && roomState.showdownResults.length > 0 && (

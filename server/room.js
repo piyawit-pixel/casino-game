@@ -52,7 +52,7 @@ export class Room {
     }
   }
 
-  addPlayer(id, name) {
+  addPlayer(id, name, initialChips = 1000) {
     const existingPlayer = this.players.find(p => p.id === id || (p.name.toLowerCase() === name.toLowerCase() && !p.isOnline));
     
     if (existingPlayer) {
@@ -67,7 +67,7 @@ export class Room {
     const newPlayer = {
       id,
       name,
-      chips: 1000,
+      chips: initialChips,
       cards: [],
       currentBet: 0,
       totalBetInHand: 0,

@@ -22,3 +22,6 @@ client/dist/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Database files
+server/users.json
