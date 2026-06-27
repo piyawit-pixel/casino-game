@@ -8,6 +8,7 @@ import { Room } from './room.js';
 import { CheckersRoom } from './checkersRoom.js';
 import { CoupRoom } from './coupRoom.js';
 import { UnoRoom } from './unoRoom.js';
+import { BangRoom } from './bangRoom.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,7 +66,7 @@ io.on('connection', (socket) => {
       return;
     }
     const roomId = generateRoomId();
-    const room = gameType === 'checkers' ? new CheckersRoom(roomId) : gameType === 'coup' ? new CoupRoom(roomId) : gameType === 'uno' ? new UnoRoom(roomId) : new Room(roomId);
+    const room = gameType === 'checkers' ? new CheckersRoom(roomId) : gameType === 'coup' ? new CoupRoom(roomId) : gameType === 'uno' ? new UnoRoom(roomId) : gameType === 'bang' ? new BangRoom(roomId) : new Room(roomId);
     rooms.set(roomId, room);
 
     const player = room.addPlayer(socket.id, name.trim());
@@ -333,6 +334,67 @@ io.on('connection', (socket) => {
     if (!room || room.gameType !== 'uno') return;
     try {
       room.resolveDrawPenalty(socket.id);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  // BANG! Game events
+  socket.on('bangPlayBrown', ({ cardId, targetId }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'bang') return;
+    try {
+      room.playBrownCard(socket.id, cardId, targetId);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('bangPlayBlue', ({ cardId }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'bang') return;
+    try {
+      room.playBlueCard(socket.id, cardId);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('bangRespond', ({ cardId }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'bang') return;
+    try {
+      room.respondToAttack(socket.id, cardId);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('bangEndTurn', () => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'bang') return;
+    try {
+      room.endTurn(socket.id);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('bangDiscardLimit', ({ cardId }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'bang') return;
+    try {
+      room.discardCardToLimit(socket.id, cardId);
       broadcastRoomState(currentRoomId);
     } catch (err) {
       socket.emit('errorMsg', err.message);

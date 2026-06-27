@@ -111,6 +111,38 @@ function UnoCard({ color, type, onClick, isSelectable = true, isMini = false }) 
   );
 }
 
+function BangCard({ type, color, onClick, isSelectable = true }) {
+  const isHidden = type === 'hidden';
+  const colorClass = isHidden ? 'card-hidden' : `card-${color}`;
+  
+  const displayType = {
+    'bang': '💥 BANG!',
+    'missed': '🛡️ MISSED!',
+    'beer': '🍺 BEER',
+    'stagecoach': '🐎 STAGECOACH',
+    'wells_fargo': '🚂 WELLS FARGO',
+    'gatling': '🔫 GATLING',
+    'indians': '🏹 INDIANS!',
+    'cat_balou': '✂️ CAT BALOU',
+    'panic': '🎒 PANIC!',
+    'barrel': '🛢️ BARREL',
+    'mustang': '🐎 MUSTANG',
+    'schofield': '🔫 SCHOFIELD (2)',
+    'winchester': '🔫 WINCHESTER (5)',
+    'volcanic': '🔫 VOLCANIC (1)'
+  }[type] || type;
+
+  return (
+    <div 
+      className={`bang-card ${colorClass} ${onClick && isSelectable ? '' : 'no-hover'}`}
+      onClick={isSelectable ? onClick : undefined}
+    >
+      <span style={{ fontSize: '0.6rem', textAlign: 'center' }}>{displayType}</span>
+      {!isHidden && <span style={{ fontSize: '0.45rem', opacity: 0.6, alignSelf: 'center', marginTop: 'auto' }}>{color === 'blue' ? 'อุปกรณ์' : 'กดใช้งาน'}</span>}
+    </div>
+  );
+}
+
 function App() {
   const [socket, setSocket] = useState(null);
   const [roomIdInput, setRoomIdInput] = useState('');
@@ -237,7 +269,11 @@ function App() {
 
   const handlePlayerNodeClick = (targetPlayer) => {
     if (!targetSelectMode) return;
-    socket.emit('coupAction', { type: targetSelectMode, targetId: targetPlayer.id });
+    if (typeof targetSelectMode === 'string') {
+      socket.emit('coupAction', { type: targetSelectMode, targetId: targetPlayer.id });
+    } else if (targetSelectMode.cardId) {
+      socket.emit('bangPlayBrown', { cardId: targetSelectMode.cardId, targetId: targetPlayer.id });
+    }
     setTargetSelectMode(null);
   };
 
@@ -660,6 +696,19 @@ function App() {
                   <div className="game-type-card">
                     <span className="game-type-icon">🎴</span>
                     <span className="game-type-label">อูโน่ (UNO)</span>
+                  </div>
+                </label>
+                <label className="game-type-option">
+                  <input 
+                    type="radio" 
+                    name="gameType" 
+                    value="bang" 
+                    checked={gameType === 'bang'}
+                    onChange={() => setGameType('bang')} 
+                  />
+                  <div className="game-type-card">
+                    <span className="game-type-icon">🤠</span>
+                    <span className="game-type-label">นายอำเภอดวลปืน (BANG!)</span>
                   </div>
                 </label>
               </div>
@@ -1226,6 +1275,302 @@ function App() {
                 </div>
               </div>
             )}
+          </>
+        ) : roomState.gameType === 'bang' ? (
+          <>
+            {/* The BANG! Table container */}
+            <div className="poker-table-container">
+              <div className="bang-table">
+                
+                {/* Event banner */}
+                {roomState.lastEvent && (
+                  <div className="last-action-indicator" style={{ top: '8%', fontSize: '0.85rem' }}>
+                    📢 {roomState.lastEvent}
+                  </div>
+                )}
+
+                {/* Center response / prompt card */}
+                <div className="coup-center-prompt glass" style={{ width: '310px' }}>
+                  <span className="coup-prompt-title">
+                    {roomState.gameState === 'PLAYING' ? 'กำลังเล่น (Playing)' : 
+                     roomState.gameState === 'WAITING_RESPONSE' ? 'ดวลเดือด (Duel)' :
+                     roomState.gameState === 'GAME_OVER' ? 'จบเกมดวลปืน' : ''}
+                  </span>
+
+                  {roomState.gameState === 'PLAYING' && (
+                    <div className="coup-prompt-desc">
+                      ตาของ <b style={{ color: 'var(--primary)' }}>{roomState.players[roomState.turnIndex]?.name}</b> กำลังเลือกการ์ดเล่น...
+                    </div>
+                  )}
+
+                  {roomState.gameState === 'WAITING_RESPONSE' && roomState.pendingResponse && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div className="coup-prompt-desc">
+                        {roomState.pendingResponse.playerId === socket.id ? (
+                          <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>
+                            ⚠️ คุณตกเป็นเป้าหมาย! โดน {roomState.pendingResponse.attackCardType.toUpperCase()}
+                            {roomState.pendingResponse.type === 'missed' ? ' (ต้องการการ์ด หลบ/Missed)' : ' (ต้องการการ์ด ยิง/Bang)'}
+                          </span>
+                        ) : (
+                          <span>
+                            รอ <b>{roomState.players.find(p => p.id === roomState.pendingResponse.playerId)?.name}</b> ป้องกันตัวจากการโจมตี...
+                          </span>
+                        )}
+                      </div>
+                      
+                      {roomState.pendingResponse.playerId === socket.id && (
+                        <button 
+                          className="btn-primary" 
+                          onClick={() => socket.emit('bangRespond', { cardId: null })}
+                          style={{ background: '#ff4757', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer' }}
+                        >
+                          💥 ยอมรับกระสุน (-1 เลือด)
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {roomState.gameState === 'GAME_OVER' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <span style={{ color: 'var(--primary)', fontSize: '1.1rem', fontWeight: 'bold' }}>
+                        🏆 ฝ่าย {roomState.winnerRole === 'law' ? 'ผู้พิทักษ์กฎหมาย 🤠' : roomState.winnerRole === 'outlaws' ? 'กลุ่มนอกกฎหมาย 💀' : 'คนทรยศ 🐍'} ชนะ!
+                      </span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        การประลองฝุ่นตลบจบลงแล้ว
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Circular Players */}
+                {playerNodes.map(({ player, x, y, isTurn }) => {
+                  const isMyNode = player.id === socket.id;
+                  
+                  // Range check for targets:
+                  // Targetable if targetSelectMode is active, player is not me, player is not dead/spectating
+                  let isTargetable = false;
+                  if (targetSelectMode && player.id !== socket.id && !player.spectating && player.bullets > 0) {
+                    if (targetSelectMode.type === 'panic') {
+                      // Panic requires distance <= 1
+                      const living = roomState.players.filter(p => !p.spectating && p.bullets > 0);
+                      const myIdx = living.findIndex(p => p.id === socket.id);
+                      const targetIdx = living.findIndex(p => p.id === player.id);
+                      if (myIdx !== -1 && targetIdx !== -1) {
+                        const dist = Math.min(Math.abs(myIdx - targetIdx), living.length - Math.abs(myIdx - targetIdx));
+                        // Factor Mustang
+                        const hasMustang = player.blueCards.some(c => c.type === 'mustang');
+                        const finalDist = hasMustang ? dist + 1 : dist;
+                        isTargetable = finalDist <= 1;
+                      }
+                    } else if (targetSelectMode.type === 'bang') {
+                      // Bang requires distance <= range
+                      const living = roomState.players.filter(p => !p.spectating && p.bullets > 0);
+                      const myIdx = living.findIndex(p => p.id === socket.id);
+                      const targetIdx = living.findIndex(p => p.id === player.id);
+                      if (myIdx !== -1 && targetIdx !== -1) {
+                        const dist = Math.min(Math.abs(myIdx - targetIdx), living.length - Math.abs(myIdx - targetIdx));
+                        // Factor Mustang
+                        const hasMustang = player.blueCards.some(c => c.type === 'mustang');
+                        const finalDist = hasMustang ? dist + 1 : dist;
+                        
+                        // Active weapon range
+                        const myPlayerDetails = roomState.players.find(p => p.id === socket.id);
+                        const weapon = myPlayerDetails?.blueCards.find(c => ['schofield', 'winchester', 'volcanic'].includes(c.type));
+                        let range = 1;
+                        if (weapon?.type === 'schofield') range = 2;
+                        else if (weapon?.type === 'winchester') range = 5;
+                        else if (weapon?.type === 'volcanic') range = 1;
+                        
+                        isTargetable = finalDist <= range;
+                      }
+                    } else if (targetSelectMode.type === 'cat_balou') {
+                      // Cat Balou has infinite range
+                      isTargetable = true;
+                    }
+                  }
+
+                  return (
+                    <div 
+                      key={player.id}
+                      className={`player-node ${isTurn ? 'is-turn' : ''} ${player.spectating ? 'folded' : ''} ${isTargetable ? 'is-target' : ''}`}
+                      style={{ left: `${x}%`, top: `${y}%` }}
+                      onClick={() => isTargetable && handlePlayerNodeClick(player)}
+                    >
+                      {/* Target select indicator */}
+                      {isTargetable && (
+                        <div className="target-select-indicator" style={{ top: '-40px' }}>
+                          🎯 ยิงเป้าหมายนี้
+                        </div>
+                      )}
+
+                      {/* Role Badge (Sheriff is public, others are hidden/revealed) */}
+                      {!player.spectating && (
+                        <div className={`bang-role-badge role-${player.role}`}>
+                          {player.role === 'sheriff' ? ' Sheriff ⭐' :
+                           player.role === 'deputy' ? ' Deputy 🛡️' :
+                           player.role === 'outlaw' ? ' Outlaw 💀' :
+                           player.role === 'renegade' ? ' Renegade 🐍' : ' Hidden 🕵️'}
+                        </div>
+                      )}
+
+                      {/* Avatar */}
+                      <div className="player-avatar-wrapper">
+                        <div className="player-avatar">
+                          {player.name.substring(0, 2).toUpperCase()}
+                        </div>
+                      </div>
+
+                      {/* Player Info Card */}
+                      <div className="player-info-card">
+                        <div className="player-name">{player.name} {isMyNode && '(คุณ)'}</div>
+                        <div className="player-chips" style={{ fontSize: '0.7rem' }}>
+                          {player.spectating ? '☠️ ตายแล้ว / ผู้ชม' : `${player.character?.name}`}
+                        </div>
+                      </div>
+
+                      {/* Bullets (Health) */}
+                      {!player.spectating && (
+                        <div className="bang-bullets-container">
+                          {Array.from({ length: player.maxBullets }).map((_, idx) => (
+                            <div 
+                              key={idx} 
+                              className={`bang-bullet ${idx >= player.bullets ? 'lost' : ''}`} 
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Blue cards in play */}
+                      {!player.spectating && player.blueCards && player.blueCards.length > 0 && (
+                        <div className="bang-blue-equipped-row">
+                          {player.blueCards.map((c, cidx) => (
+                            <span key={cidx} className="bang-blue-badge">
+                              {c.type}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Active player hand panel (Bottom) */}
+            <div className="uno-hand-wrapper">
+              <div className="uno-hand-scroll">
+                {myPlayer && !myPlayer.spectating && myPlayer.hand && myPlayer.hand.map((c) => {
+                  const isMyTurn = roomState.players[roomState.turnIndex]?.id === socket.id;
+                  
+                  // Card playable checks
+                  let isPlayable = false;
+                  
+                  if (roomState.gameState === 'PLAYING' && isMyTurn) {
+                    // It is my turn to play cards:
+                    // Weapons or blue cards can always be played
+                    const isBlue = c.color === 'blue';
+                    const isVolcanic = myPlayer.blueCards.some(bc => bc.type === 'volcanic');
+                    const isWilly = myPlayer.character?.name === 'Willy the Kid';
+                    
+                    if (isBlue) {
+                      isPlayable = true;
+                    } else {
+                      // Brown cards
+                      if (c.type === 'bang') {
+                        // Can play bang if limit not reached
+                        isPlayable = roomState.bangPlayedCount < 1 || isWilly || isVolcanic;
+                      } else {
+                        // Other cards
+                        isPlayable = true;
+                      }
+                    }
+                  } else if (roomState.gameState === 'WAITING_RESPONSE' && roomState.pendingResponse?.playerId === socket.id) {
+                    // It is my turn to defend:
+                    const isCalamity = myPlayer.character?.name === 'Calamity Janet';
+                    if (roomState.pendingResponse.type === 'missed') {
+                      isPlayable = c.type === 'missed' || (isCalamity && c.type === 'bang');
+                    } else if (roomState.pendingResponse.type === 'indians') {
+                      isPlayable = c.type === 'bang' || (isCalamity && c.type === 'missed');
+                    }
+                  }
+
+                  // Discard checks: If my turn is ending and hand size > bullets, we are forcing discards
+                  const isForcedDiscard = isMyTurn && roomState.gameState === 'PLAYING' && myPlayer.hand.length > myPlayer.bullets;
+
+                  const handleCardClick = () => {
+                    if (isForcedDiscard) {
+                      socket.emit('bangDiscardLimit', { cardId: c.id });
+                    } else if (roomState.gameState === 'WAITING_RESPONSE') {
+                      socket.emit('bangRespond', { cardId: c.id });
+                    } else if (roomState.gameState === 'PLAYING') {
+                      const isBlue = c.color === 'blue';
+                      if (isBlue) {
+                        socket.emit('bangPlayBlue', { cardId: c.id });
+                      } else {
+                        // Brown cards
+                        const needsTarget = ['bang', 'panic', 'cat_balou'].includes(c.type);
+                        if (needsTarget) {
+                          setTargetSelectMode({ type: c.type, cardId: c.id });
+                        } else {
+                          socket.emit('bangPlayBrown', { cardId: c.id });
+                        }
+                      }
+                    }
+                  };
+
+                  return (
+                    <BangCard 
+                      key={c.id} 
+                      color={c.color} 
+                      type={c.type} 
+                      onClick={handleCardClick}
+                      isSelectable={isPlayable || isForcedDiscard}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bottom action panel controls */}
+            <div className="action-panel-container">
+              <div className="action-bar glass" style={{ minHeight: '60px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                {targetSelectMode ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%' }}>
+                    <span style={{ color: 'var(--accent)', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                      🎯 เลือกผู้เล่นเป้าหมายสำหรับความสามารถ {targetSelectMode.type.toUpperCase()}
+                    </span>
+                    <button className="btn-secondary" onClick={() => setTargetSelectMode(null)} style={{ padding: '6px 12px', width: 'auto', fontSize: '0.8rem', cursor: 'pointer' }}>
+                      ยกเลิก (Cancel)
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {roomState.players[roomState.turnIndex]?.id === socket.id && roomState.gameState === 'PLAYING' && (
+                      <div style={{ display: 'flex', gap: '16px', width: '100%', justifyContent: 'center', alignItems: 'center' }}>
+                        {myPlayer && myPlayer.hand.length > myPlayer.bullets ? (
+                          <span style={{ color: 'var(--accent)', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                            ⚠️ คุณต้องทิ้งการ์ดให้เหลือ {myPlayer.bullets} ใบ (คลิกการ์ดในมือเพื่อเลือกทิ้ง)
+                          </span>
+                        ) : (
+                          <button 
+                            className="btn-primary" 
+                            onClick={() => socket.emit('bangEndTurn')}
+                            style={{ width: 'auto', padding: '10px 24px', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 'bold', cursor: 'pointer' }}
+                          >
+                            🔔 จบเทิร์น (End Turn)
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {roomState.players[roomState.turnIndex]?.id !== socket.id && (
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                        {myPlayer?.spectating ? 'คุณตกรอบแล้ว นั่งชมเกมคาวบอยอยู่...' : 'กรุณารอเทิร์นของคุณ...'}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </>
         ) : (
           <>
