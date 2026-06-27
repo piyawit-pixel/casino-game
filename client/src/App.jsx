@@ -105,12 +105,12 @@ function Card({ rank, suit, isMini = false, isDealt = false }) {
 function CoupCard({ role, dead, onClick, isSelectable }) {
   const roleClass = dead ? 'dead' : role === 'hidden' ? 'role-hidden' : `role-${role}`;
   const displayRole = {
-    duke: 'Duke (ดยุก)',
-    assassin: 'Assassin (นักฆ่า)',
-    captain: 'Captain (กัปตัน)',
-    ambassador: 'Ambassador (ทูต)',
-    contessa: 'Contessa (คอนเตส)',
-    hidden: 'Influence'
+    duke: 'ดยุก (Duke) 👑',
+    assassin: 'นักฆ่า (Assassin) 🗡️',
+    captain: 'กัปตัน (Captain) ⚓',
+    ambassador: 'ทูต (Ambassador) 📜',
+    contessa: 'คอนเตส (Contessa) 🛡️',
+    hidden: 'บทบาทลับ'
   }[role] || role;
 
   return (
@@ -209,6 +209,18 @@ function BossCard({ type, value, onClick, isSelectable = true }) {
   );
 }
 
+const translateActionType = (type) => {
+  return {
+    income: 'รับรายได้ธรรมดา (+1 🪙)',
+    foreign_aid: 'รับเงินช่วยเหลือ (+2 🪙)',
+    tax: 'เก็บภาษี (ดยุก +3 🪙)',
+    steal: 'ขโมยเงิน (กัปตัน 2 🪙)',
+    assassinate: 'ลอบสังหาร (นักฆ่า จ่าย 3 🪙)',
+    exchange: 'แลกเปลี่ยนการ์ด (ทูต)',
+    coup: 'ปฏิวัติโค่นอำนาจ (จ่าย 7 🪙)'
+  }[type] || type;
+};
+
 function renderPlayerAvatar(player, isDealer = false) {
   const frameClass = player.frame && player.frame !== 'default' ? `frame-${player.frame}` : '';
   return (
@@ -222,7 +234,9 @@ function renderPlayerAvatar(player, isDealer = false) {
 }
 
 function App() {
-  const [socket, setSocket] = useState(null);
+  const [stateSocket, setSocket] = useState(null);
+  const socketRef = useRef(null);
+  const socket = socketRef.current || stateSocket;
   const [chatCollapsed, setChatCollapsed] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('user_token') || null);
@@ -256,7 +270,6 @@ function App() {
   const [slotWinMessage, setSlotWinMessage] = useState('');
   
   const chatMessagesRef = useRef(null);
-  const socketRef = useRef(null);
 
   // Verify token on mount or when token changes
   useEffect(() => {
@@ -550,22 +563,22 @@ function App() {
     return (
       <div className="coup-action-panel">
         <button className="coup-action-btn" onClick={() => socket.emit('coupAction', { type: 'income' })}>
-          <span className="coup-action-title">Income</span>
+          <span className="coup-action-title">💵 รายได้ (Income)</span>
           <span className="coup-action-cost">+1 เหรียญ</span>
         </button>
 
         <button className="coup-action-btn" onClick={() => socket.emit('coupAction', { type: 'foreign_aid' })}>
-          <span className="coup-action-title">Foreign Aid</span>
+          <span className="coup-action-title">🤝 ช่วยเหลือ (Foreign Aid)</span>
           <span className="coup-action-cost">+2 เหรียญ</span>
         </button>
 
         <button className="coup-action-btn" onClick={() => socket.emit('coupAction', { type: 'tax' })}>
-          <span className="coup-action-title">Tax (Duke)</span>
+          <span className="coup-action-title">👑 เก็บภาษี (Tax - Duke)</span>
           <span className="coup-action-cost">+3 เหรียญ</span>
         </button>
 
         <button className="coup-action-btn" onClick={() => setTargetSelectMode('steal')}>
-          <span className="coup-action-title">Steal (Captain)</span>
+          <span className="coup-action-title">⚓ ขโมยเงิน (Steal - Captain)</span>
           <span className="coup-action-cost">ขโมย 2 เหรียญ</span>
         </button>
 
@@ -574,12 +587,12 @@ function App() {
           disabled={myActivePlayer?.coins < 3} 
           onClick={() => setTargetSelectMode('assassinate')}
         >
-          <span className="coup-action-title">Assassinate</span>
+          <span className="coup-action-title">🗡️ ลอบสังหาร (Assassinate)</span>
           <span className="coup-action-cost">จ่าย 3 เหรียญ</span>
         </button>
 
         <button className="coup-action-btn" onClick={() => socket.emit('coupAction', { type: 'exchange' })}>
-          <span className="coup-action-title">Exchange (Amb)</span>
+          <span className="coup-action-title">📜 สลับไพ่ (Exchange - Amb)</span>
           <span className="coup-action-cost">สลับไพ่ 2 ใบ</span>
         </button>
 
@@ -623,7 +636,7 @@ function App() {
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div className="coup-prompt-desc">
-                คุณประกาศใช้ <b style={{ color: 'var(--primary)' }}>{activeAction.type}</b> {targetName && `ใส่ ${targetName}`}
+                คุณประกาศใช้ <b style={{ color: 'var(--primary)' }}>{translateActionType(activeAction.type)}</b> {targetName && `ใส่ ${targetName}`}
               </div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                 {activeAction.status === 'blocked' 
@@ -664,7 +677,7 @@ function App() {
                 </span>
               ) : (
                 <span>
-                  <b>{actorName}</b> ประกาศใช้ <b>{activeAction.type}</b> {targetName && `ใส่ ${targetName}`}
+                  <b>{actorName}</b> ประกาศใช้ <b>{translateActionType(activeAction.type)}</b> {targetName && `ใส่ ${targetName}`}
                 </span>
               )}
             </div>
@@ -1185,6 +1198,27 @@ function App() {
 
   return (
     <div className={`game-layout ${chatCollapsed ? 'chat-collapsed' : ''}`}>
+      {errorMsg && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 9999,
+          background: 'rgba(235, 77, 75, 0.95)',
+          color: '#fff',
+          padding: '12px 24px',
+          borderRadius: '10px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+          fontWeight: 'bold',
+          fontFamily: 'var(--font-sans)',
+          border: '1px solid rgba(255,255,255,0.2)',
+          pointerEvents: 'none',
+          animation: 'fadeIn 0.3s ease-out'
+        }}>
+          ⚠️ {errorMsg}
+        </div>
+      )}
       {/* Table Area (Left Side) */}
       <div className="table-area">
         {/* Room Header Info */}
@@ -2535,10 +2569,10 @@ function App() {
                       {/* Role Badge (Sheriff is public, others are hidden/revealed) */}
                       {!player.spectating && (
                         <div className={`bang-role-badge role-${player.role}`}>
-                          {player.role === 'sheriff' ? ' Sheriff ⭐' :
-                           player.role === 'deputy' ? ' Deputy 🛡️' :
-                           player.role === 'outlaw' ? ' Outlaw 💀' :
-                           player.role === 'renegade' ? ' Renegade 🐍' : ' Hidden 🕵️'}
+                          {player.role === 'sheriff' ? 'นายอำเภอ ⭐ (Sheriff)' :
+                           player.role === 'deputy' ? 'ผู้ช่วยนายอำเภอ 🛡️ (Deputy)' :
+                           player.role === 'outlaw' ? 'โจรนอกกฎหมาย 💀 (Outlaw)' :
+                           player.role === 'renegade' ? 'คนทรยศ 🐍 (Renegade)' : 'บทบาทลับ 🕵️ (Hidden)'}
                         </div>
                       )}
 
@@ -2551,6 +2585,11 @@ function App() {
                         <div className="player-chips" style={{ fontSize: '0.7rem' }}>
                           {player.spectating ? '☠️ ตายแล้ว / ผู้ชม' : `${player.character?.name}`}
                         </div>
+                        {!player.spectating && player.character?.desc && (
+                          <div style={{ fontSize: '0.55rem', opacity: 0.8, color: 'var(--text-muted)', fontStyle: 'italic', maxWidth: '100px', whiteSpace: 'normal', marginTop: '2px', lineHeight: '1.2' }}>
+                            {player.character.desc}
+                          </div>
+                        )}
                       </div>
 
                       {/* Bullets (Health) */}
