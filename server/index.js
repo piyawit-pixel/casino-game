@@ -9,6 +9,7 @@ import { CheckersRoom } from './checkersRoom.js';
 import { CoupRoom } from './coupRoom.js';
 import { UnoRoom } from './unoRoom.js';
 import { BangRoom } from './bangRoom.js';
+import { InsiderRoom } from './insiderRoom.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,7 +67,7 @@ io.on('connection', (socket) => {
       return;
     }
     const roomId = generateRoomId();
-    const room = gameType === 'checkers' ? new CheckersRoom(roomId) : gameType === 'coup' ? new CoupRoom(roomId) : gameType === 'uno' ? new UnoRoom(roomId) : gameType === 'bang' ? new BangRoom(roomId) : new Room(roomId);
+    const room = gameType === 'checkers' ? new CheckersRoom(roomId) : gameType === 'coup' ? new CoupRoom(roomId) : gameType === 'uno' ? new UnoRoom(roomId) : gameType === 'bang' ? new BangRoom(roomId) : gameType === 'insider' ? new InsiderRoom(roomId) : new Room(roomId);
     rooms.set(roomId, room);
 
     const player = room.addPlayer(socket.id, name.trim());
@@ -401,6 +402,43 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Insider Game events
+  socket.on('insiderSubmitGuess', ({ text }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'insider') return;
+    try {
+      room.submitGuess(socket.id, text);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('insiderRespondGuess', ({ guessId, approved }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'insider') return;
+    try {
+      room.respondToGuess(guessId, approved);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('insiderVote', ({ targetId }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'insider') return;
+    try {
+      room.votePlayer(socket.id, targetId);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
   // Send a chat message
   socket.on('sendMessage', (text) => {
     if (!currentRoomId || !text || text.trim() === '') return;
@@ -470,3 +508,13 @@ const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Poker backend server running on port ${PORT}`);
 });
+
+// Global Timer Tick for Insider Game (once per second)
+setInterval(() => {
+  rooms.forEach((room, roomId) => {
+    if (room.gameType === 'insider' && room.gameState === 'PLAYING') {
+      room.tickTimer();
+      broadcastRoomState(roomId);
+    }
+  });
+}, 1000);

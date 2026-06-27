@@ -157,6 +157,7 @@ function App() {
   const [selectedSquare, setSelectedSquare] = useState(null); // { row, col }
   const [targetSelectMode, setTargetSelectMode] = useState(null); // 'steal' | 'assassinate' | 'coup'
   const [selectedExchangeIndices, setSelectedExchangeIndices] = useState([]); // indices for Ambassador swap
+  const [insiderGuessInput, setInsiderGuessInput] = useState('');
   
   const chatEndRef = useRef(null);
   const socketRef = useRef(null);
@@ -667,6 +668,7 @@ function App() {
                 <option value="coup" style={{ background: '#221913', color: '#fff' }}>👑 โค่นอำนาจ (Coup - Social Deduction)</option>
                 <option value="uno" style={{ background: '#221913', color: '#fff' }}>🎴 อูโน่ ไร้ความปรานี (UNO No Mercy)</option>
                 <option value="bang" style={{ background: '#221913', color: '#fff' }}>🤠 นายอำเภอดวลปืน (BANG! Cowboy)</option>
+                <option value="insider" style={{ background: '#221913', color: '#fff' }}>🕵️ จับโกหกคนวงใน (Insider)</option>
               </select>
             </div>
             
@@ -1231,6 +1233,217 @@ function App() {
                 </div>
               </div>
             )}
+          </>
+        ) : roomState.gameType === 'insider' ? (
+          <>
+            {/* The Insider Table container */}
+            <div className="poker-table-container">
+              <div className="insider-table">
+                
+                {/* Event banner */}
+                {roomState.lastEvent && (
+                  <div className="last-action-indicator" style={{ top: '8%', fontSize: '0.85rem' }}>
+                    📢 {roomState.lastEvent}
+                  </div>
+                )}
+
+                {/* Center Word & Timer Display */}
+                <div className="coup-center-prompt glass" style={{ width: '320px', padding: '16px' }}>
+                  <span className="coup-prompt-title">คำปริศนา (Secret Word)</span>
+                  
+                  {/* Timer display */}
+                  {roomState.gameState === 'PLAYING' && (
+                    <div className="insider-timer">
+                      ⏳ {Math.floor(roomState.timerSeconds / 60)}:{(roomState.timerSeconds % 60).toString().padStart(2, '0')}
+                    </div>
+                  )}
+
+                  <div className="coup-prompt-desc" style={{ marginTop: '4px' }}>
+                    หมวดหมู่: <b style={{ color: 'var(--primary)' }}>{roomState.category}</b>
+                  </div>
+
+                  <div style={{ margin: '14px 0', padding: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>คำศัพท์ปริศนา:</div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: roomState.targetWord === '???' ? 'var(--text-muted)' : '#2ed573', letterSpacing: '1px' }}>
+                      {roomState.targetWord}
+                    </div>
+                  </div>
+
+                  {/* Guess validation queue (Shown to Master) */}
+                  {roomState.gameState === 'PLAYING' && myPlayer?.role === 'master' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--primary)' }}>👮 แผงควบคุมคำทายของ Master:</span>
+                      
+                      <div className="insider-guesses-box">
+                        {roomState.guesses.length === 0 ? (
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>ยังไม่มีคำทายเข้ามา...</span>
+                        ) : (
+                          roomState.guesses.map((g) => (
+                            <div key={g.id} className={`guess-row ${g.approved === true ? 'approved' : g.approved === false ? 'rejected' : 'pending'}`}>
+                              <span><b>{g.name}:</b> {g.text}</span>
+                              {g.approved === null && (
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                  <button 
+                                    className="btn-primary" 
+                                    onClick={() => socket.emit('insiderRespondGuess', { guessId: g.id, approved: true })}
+                                    style={{ background: '#2ed573', color: '#000', border: 'none', padding: '2px 6px', fontSize: '0.65rem', borderRadius: '4px', cursor: 'pointer', width: 'auto' }}
+                                  >
+                                    ถูก
+                                  </button>
+                                  <button 
+                                    className="btn-secondary" 
+                                    onClick={() => socket.emit('insiderRespondGuess', { guessId: g.id, approved: false })}
+                                    style={{ background: '#ff4757', color: '#fff', border: 'none', padding: '2px 6px', fontSize: '0.65rem', borderRadius: '4px', cursor: 'pointer', width: 'auto' }}
+                                  >
+                                    ผิด
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Voting Instruction or Game Over details */}
+                  {roomState.gameState === 'VOTING' && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      กดที่อวตาร์ผู้เล่นรอบโต๊ะเพื่อเลือกโหวตว่าใครเป็น **Insider**!
+                    </div>
+                  )}
+
+                  {roomState.gameState === 'GAME_OVER' && (
+                    <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: roomState.winner === 'commoners' ? '#2ed573' : '#ff4757', marginTop: '6px' }}>
+                      {roomState.winner === 'commoners' ? '🎉 ฝั่งคนธรรมดา (Commoners) ชนะ!' : '👽 ฝั่งคนวงใน (Insider) ชนะ!'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Circular Players */}
+                {playerNodes.map(({ player, x, y }) => {
+                  const isMyNode = player.id === socket.id;
+                  const hasVoted = player.votedFor !== null;
+                  
+                  // In voting phase, we can click players to vote for them (except master/self/spectator)
+                  const canVoteThisPlayer = roomState.gameState === 'VOTING' && 
+                                           player.id !== socket.id && 
+                                           !player.spectating && 
+                                           myPlayer && !myPlayer.spectating && 
+                                           !myPlayer.votedFor;
+
+                  return (
+                    <div 
+                      key={player.id}
+                      className={`player-node ${canVoteThisPlayer ? 'is-target' : ''}`}
+                      style={{ left: `${x}%`, top: `${y}%` }}
+                      onClick={() => canVoteThisPlayer && socket.emit('insiderVote', { targetId: player.id })}
+                    >
+                      {/* Voting indicator */}
+                      {canVoteThisPlayer && (
+                        <div className="target-select-indicator" style={{ top: '-35px' }}>
+                          🗳️ โหวตคนนี้
+                        </div>
+                      )}
+
+                      {/* Vote tally/mark badge */}
+                      {roomState.gameState === 'VOTING' && hasVoted && (
+                        <div className="bang-role-badge role-hidden" style={{ background: '#ffa502', color: '#000' }}>
+                          โหวตแล้ว ✓
+                        </div>
+                      )}
+
+                      {/* Revealed Roles (GameOver) */}
+                      {!player.spectating && (
+                        <div className={`bang-role-badge role-${player.role}`}>
+                          {player.role === 'master' ? 'Master 🎤' :
+                           player.role === 'insider' && (isMyNode || roomState.gameState === 'GAME_OVER') ? 'Insider 👽' :
+                           player.role === 'commoner' && (isMyNode || roomState.gameState === 'GAME_OVER') ? 'Commoner 🧑' : 'Hidden 🕵️'}
+                        </div>
+                      )}
+
+                      {/* Avatar */}
+                      <div className="player-avatar-wrapper">
+                        <div className="player-avatar">
+                          {player.name.substring(0, 2).toUpperCase()}
+                        </div>
+                      </div>
+
+                      {/* Player Info Card */}
+                      <div className="player-info-card">
+                        <div className="player-name">
+                          {player.name} {isMyNode && '(คุณ)'}
+                          {roomState.guesserId === player.id && ' 💡'}
+                        </div>
+                        <div className="player-chips" style={{ fontSize: '0.75rem' }}>
+                          {player.spectating ? 'ผู้ชม' : player.role === 'master' ? 'ผู้ตอบคำถาม' : 'ผู้ร่วมถามสืบ'}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Active player guess submission area (Bottom panel) */}
+            <div className="action-panel-container">
+              <div className="action-bar glass" style={{ minHeight: '80px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px 24px', justifyContent: 'center', alignItems: 'center' }}>
+                {roomState.gameState === 'PLAYING' && (
+                  <>
+                    {myPlayer?.role === 'master' ? (
+                      <span style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                        🎤 คุณคือ Master! คอยตอบคำถามในแชท และตรวจสอบคำทายด้านบน
+                      </span>
+                    ) : (
+                      <form 
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          if (insiderGuessInput.trim()) {
+                            socket.emit('insiderSubmitGuess', { text: insiderGuessInput });
+                            setInsiderGuessInput('');
+                          }
+                        }}
+                        style={{ display: 'flex', gap: '8px', width: '100%', maxWidth: '400px' }}
+                      >
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="พิมพ์เพื่อส่งคำทายศัพท์ปริศนา..." 
+                          value={insiderGuessInput}
+                          onChange={(e) => setInsiderGuessInput(e.target.value)}
+                          maxLength={30}
+                        />
+                        <button type="submit" className="btn-primary" style={{ width: '80px', margin: 0, padding: '0 12px', fontSize: '0.85rem' }}>
+                          ส่งคำทาย
+                        </button>
+                      </form>
+                    )}
+                  </>
+                )}
+
+                {roomState.gameState === 'VOTING' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                    {myPlayer?.spectating ? (
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>คุณกำลังรับชมช่วงโหวต...</span>
+                    ) : myPlayer?.votedFor ? (
+                      <span style={{ color: '#2ed573', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                        ✓ โหวตเรียบร้อยแล้ว รอผู้เล่นท่านอื่นโหวตให้ครบ...
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--accent)', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                        👉 ใครคือคนวงใน (Insider)? กรุณาคลิกเลือกโหวตที่ผู้เล่นคนอื่นบนโต๊ะ
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {roomState.gameState === 'GAME_OVER' && (
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    การสืบคดีเสร็จสิ้นแล้ว! หัวหน้าห้องสามารถแจกตาถัดไปด้านซ้ายเพื่อเล่นต่อ
+                  </span>
+                )}
+              </div>
+            </div>
           </>
         ) : roomState.gameType === 'bang' ? (
           <>
