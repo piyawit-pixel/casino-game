@@ -19,7 +19,7 @@
 .lobby-title {
   font-size: 2.5rem;
   margin-bottom: 8px;
-  background: linear-gradient(135deg, #ffffff 0%, #ffd700 100%);
+  background: linear-gradient(135deg, #2f3542 0%, #e67e22 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -48,8 +48,8 @@
 .form-input {
   width: 100%;
   padding: 14px 16px;
-  background: rgba(22, 17, 13, 0.75);
-  border: 1px solid rgba(255, 183, 3, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 10px;
   color: var(--text-primary);
   font-size: 1rem;
@@ -76,15 +76,15 @@
 .btn-secondary {
   width: 100%;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 10px;
   color: var(--text-primary);
   font-size: 1rem;
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .divider {
@@ -228,15 +228,15 @@
 }
 
 .pot-display {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.9);
   padding: 8px 20px;
   border-radius: 20px;
-  border: 1px solid rgba(255, 215, 0, 0.2);
+  border: 1px solid rgba(230, 126, 34, 0.3);
   color: var(--text-primary);
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 1.2rem;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -317,9 +317,9 @@
   height: 72px;
   border-radius: 50%;
   padding: 4px;
-  background: #1a1f2c;
-  border: 3px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+  background: #ffffff;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
 }
 
 .player-node.is-turn .player-avatar-wrapper {
@@ -340,7 +340,7 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3a4750 0%, #222831 100%);
+  background: linear-gradient(135deg, #f5f6fa 0%, #dcdde1 100%);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -373,11 +373,11 @@
   margin-top: 8px;
   padding: 4px 10px;
   border-radius: 12px;
-  background: rgba(10, 13, 20, 0.85);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   width: 100%;
   text-align: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 .player-name {
@@ -610,9 +610,10 @@
 .chat-sidebar {
   display: flex;
   flex-direction: column;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
   height: 100%;
-  background: rgba(10, 13, 20, 0.4);
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(20px);
 }
 
 .chat-header {
@@ -685,9 +686,9 @@
   flex: 1;
   padding: 10px 14px;
   border-radius: 8px;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  color: var(--text-primary);
   font-size: 0.9rem;
 }
 
@@ -1996,8 +1997,9 @@
   padding: 10px 0;
   cursor: pointer;
   width: 50px;
-  background: rgba(10, 13, 20, 0.7);
+  background: rgba(255, 255, 255, 0.75);
   transition: all var(--transition-normal);
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .chat-sidebar.collapsed:hover {
@@ -2057,4 +2059,12 @@
     writing-mode: horizontal-tb;
     text-orientation: unset;
   }
+}
+
+/* Suit colors for poker cards */
+.suit-red {
+  color: #eb2f06 !important; /* Premium vibrant red */
+}
+.suit-black {
+  color: #1e272e !important; /* Premium rich slate black */
 }
