@@ -649,6 +649,19 @@ function App() {
                     <span className="game-type-label">โค่นอำนาจ (Coup)</span>
                   </div>
                 </label>
+                <label className="game-type-option">
+                  <input 
+                    type="radio" 
+                    name="gameType" 
+                    value="uno" 
+                    checked={gameType === 'uno'}
+                    onChange={() => setGameType('uno')} 
+                  />
+                  <div className="game-type-card">
+                    <span className="game-type-icon">🎴</span>
+                    <span className="game-type-label">อูโน่ (UNO)</span>
+                  </div>
+                </label>
               </div>
             </div>
             
