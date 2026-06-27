@@ -107,11 +107,25 @@ export class CoupRoom {
           const liveCards = player.cards.filter(c => !c.dead);
           liveCards.forEach(c => { c.dead = true; });
           this.addMessage('System', `${player.name} died due to disconnection.`);
-          this.checkWinCondition();
           
-          // If it was their turn, move to next
-          if (this.gameState === 'PLAYING' && this.players[this.turnIndex].id === id) {
-            this.moveToNextTurn();
+          const won = this.checkWinCondition();
+          if (won) return;
+
+          // If we were waiting for them to discard, bypass it
+          if (this.pendingDiscardPlayerId === id) {
+            this.pendingDiscardPlayerId = null;
+            this.pendingDiscardReason = '';
+            
+            if (this.gameState === 'ACTION_PENDING') {
+              this.resolveAction();
+            } else {
+              this.moveToNextTurn();
+            }
+          } else {
+            // If it was their turn, move to next
+            if (this.gameState === 'PLAYING' && this.players[this.turnIndex].id === id) {
+              this.moveToNextTurn();
+            }
           }
         }
       }
@@ -269,17 +283,16 @@ export class CoupRoom {
     this.addMessage('System', this.lastEvent);
   }
 
-  // Players pass/accept the action
   passAction(playerId) {
     if (this.gameState !== 'ACTION_PENDING') return;
 
     this.passes.add(playerId);
 
-    const activePlayers = this.players.filter(p => !p.spectating && p.cards.some(c => !c.dead));
+    const activeOnlinePlayers = this.players.filter(p => !p.spectating && p.isOnline && p.cards.some(c => !c.dead));
     // If everyone except the actor (or everyone except the blocker, if blocked) has passed
     const requiredPasses = this.activeAction.status === 'blocked'
-      ? activePlayers.length - 1 // Everyone except blocker
-      : activePlayers.length - 1; // Everyone except actor
+      ? activeOnlinePlayers.length - 1 // Everyone online except blocker
+      : activeOnlinePlayers.length - 1; // Everyone online except actor
 
     if (this.passes.size >= requiredPasses) {
       // Resolve action

@@ -285,7 +285,6 @@ export class InsiderRoom {
     }
   }
 
-  // Voting action
   votePlayer(voterId, targetId) {
     if (this.gameState !== 'VOTING') {
       throw new Error('Not in voting phase.');
@@ -295,11 +294,11 @@ export class InsiderRoom {
 
     voter.votedFor = targetId;
 
-    // Check if everyone voted
-    const active = this.players.filter(p => !p.spectating);
-    const votedCount = active.filter(p => p.votedFor !== null).length;
+    // Check if everyone online voted
+    const activeOnline = this.players.filter(p => !p.spectating && p.isOnline);
+    const votedCount = activeOnline.filter(p => p.votedFor !== null).length;
 
-    if (votedCount === active.length) {
+    if (votedCount >= activeOnline.length) {
       this.tallyVotes();
     }
   }

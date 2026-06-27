@@ -129,6 +129,19 @@ export class BangRoom {
         // If in-game, eliminate them immediately
         if (player.bullets > 0) {
           this.eliminatePlayer(player, 'disconnection');
+          
+          // Fix: If they were targeted to respond, advance targets
+          if (this.pendingResponse && this.pendingResponse.playerId === id) {
+            this.advanceTargetQueue();
+          }
+
+          // Fix: If it was their turn, advance turn
+          if (this.gameState === 'PLAYING' && this.players[this.turnIndex].id === id) {
+            do {
+              this.turnIndex = (this.turnIndex + 1) % this.players.length;
+            } while (this.players[this.turnIndex].spectating || this.players[this.turnIndex].bullets <= 0);
+            this.startTurn();
+          }
         }
       }
     }

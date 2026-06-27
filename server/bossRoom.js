@@ -133,11 +133,16 @@ export class BossRoom {
       const p = this.players[idx];
       p.isOnline = false;
       this.addMessage('System', `${p.name} disconnected.`);
-      
       if (this.gameState === 'WAITING') {
         this.players.splice(idx, 1);
         if (p.isHost && this.players.length > 0) {
           this.players[0].isHost = true;
+        }
+      } else {
+        p.spectating = true;
+        if (this.bossPlayerId === id && this.gameState === 'PLAYING') {
+          this.addMessage('System', `${p.name} (บอสประจำรอบ) หลุดออกจากระบบ ทำการข้ามรอบการเจรจานี้.`);
+          this.advanceBoardTurn();
         }
       }
     }

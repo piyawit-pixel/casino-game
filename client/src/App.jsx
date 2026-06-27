@@ -222,11 +222,10 @@ const translateActionType = (type) => {
 };
 
 function renderPlayerAvatar(player, isDealer = false) {
-  const frameClass = player.frame && player.frame !== 'default' ? `frame-${player.frame}` : '';
   return (
-    <div className={`player-avatar-wrapper ${frameClass}`}>
+    <div className="player-avatar-wrapper">
       <div className="player-avatar">
-        {player.avatar || player.name.substring(0, 2).toUpperCase()}
+        {player.name.substring(0, 2).toUpperCase()}
       </div>
       {isDealer && <div className="player-dealer-btn">D</div>}
     </div>
@@ -3092,68 +3091,7 @@ function App() {
               )}
             </div>
 
-            {roomState.gameState === 'WAITING' && (
-          <div className="lobby-customizer-panel glass" style={{ padding: '14px', borderBottom: '1px solid var(--border-card)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--primary)', fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>
-              🎨 แต่งโปรไฟล์ของคุณ
-            </span>
-            
-            {/* Avatar emojis choice */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>เลือกอวตาร์อิโมจิ:</span>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {[null, '🦊', '🐱', '🦁', '🕵️', '🤠', '😈', '🤡', '👽', '🐼', '🤖', '💀'].map(emoji => (
-                  <button 
-                    key={emoji || 'default'}
-                    onClick={() => handleUpdateProfile(emoji, myPlayer?.frame)}
-                    style={{
-                      background: (myPlayer?.avatar === emoji || (emoji === null && !myPlayer?.avatar)) ? 'var(--primary)' : 'rgba(0,0,0,0.04)',
-                      color: (myPlayer?.avatar === emoji || (emoji === null && !myPlayer?.avatar)) ? '#fff' : 'var(--text-primary)',
-                      border: '1px solid rgba(0,0,0,0.08)',
-                      padding: '4px 6px',
-                      borderRadius: '6px',
-                      fontSize: '0.75rem',
-                      cursor: 'pointer',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    {emoji || 'ชื่อย่อ'}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            {/* Frame borders choice */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>เลือกกรอบโปรไฟล์:</span>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {[
-                  { value: 'default', label: 'ปกติ' },
-                  { value: 'neon-pink', label: '💖 นีออนชมพู' },
-                  { value: 'gold-elite', label: '👑 ทองคำขาว' },
-                  { value: 'rainbow', label: '🌈 สายรุ้ง' }
-                ].map(frame => (
-                  <button 
-                    key={frame.value}
-                    onClick={() => handleUpdateProfile(myPlayer?.avatar, frame.value)}
-                    style={{
-                      background: (myPlayer?.frame === frame.value || (frame.value === 'default' && !myPlayer?.frame)) ? 'var(--primary)' : 'rgba(0,0,0,0.04)',
-                      color: (myPlayer?.frame === frame.value || (frame.value === 'default' && !myPlayer?.frame)) ? '#fff' : 'var(--text-primary)',
-                      border: '1px solid rgba(0,0,0,0.08)',
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      fontSize: '0.7rem',
-                      cursor: 'pointer',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    {frame.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
         {roomState.gameState === 'WAITING' && (
           <div className="slots-container glass" style={{ border: 'none', borderBottom: '1px solid var(--border-card)', borderRadius: 0, margin: 0, width: '100%', maxWidth: 'none' }}>

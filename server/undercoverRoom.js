@@ -235,6 +235,23 @@ export class UndercoverRoom {
       } else {
         if (!p.isDead) {
           this.eliminatePlayer(p.id, true);
+          
+          // Fix: If it was their turn to describe, advance the turn to the next living player
+          if (this.gameState === 'PLAYING' && this.players[this.turnIndex].id === id) {
+            const living = this.players.filter(pl => !pl.spectating && !pl.isDead);
+            const remainingToDescribe = living.filter(pl => !pl.description);
+            if (remainingToDescribe.length > 0) {
+              const nextPlayer = remainingToDescribe[0];
+              this.turnIndex = this.players.findIndex(pl => pl.id === nextPlayer.id);
+              this.lastEvent = `ตาของ ${nextPlayer.name} ในการใบ้คำ`;
+              this.addMessage('System', this.lastEvent);
+            } else {
+              this.gameState = 'VOTING';
+              this.players.forEach(pl => pl.votedFor = null);
+              this.lastEvent = 'ทุกคนใบ้คำครบแล้ว! เริ่มการโหวตจับผิดตัวตนสปาย';
+              this.addMessage('System', this.lastEvent);
+            }
+          }
         }
       }
     }
@@ -343,7 +360,6 @@ export class UndercoverRoom {
     }
   }
 
-  // Vote to eliminate a player
   votePlayer(voterId, targetId) {
     if (this.gameState !== 'VOTING') {
       throw new Error("Not in voting phase.");
@@ -354,10 +370,10 @@ export class UndercoverRoom {
 
     voter.votedFor = targetId;
 
-    const living = this.players.filter(p => !p.spectating && !p.isDead);
-    const votedCount = living.filter(p => p.votedFor !== null).length;
+    const livingOnline = this.players.filter(p => !p.spectating && !p.isDead && p.isOnline);
+    const votedCount = livingOnline.filter(p => p.votedFor !== null).length;
 
-    if (votedCount === living.length) {
+    if (votedCount >= livingOnline.length) {
       this.tallyVotes();
     }
   }
