@@ -80,6 +80,37 @@ function CoupCard({ role, dead, onClick, isSelectable }) {
   );
 }
 
+function UnoCard({ color, type, onClick, isSelectable = true, isMini = false }) {
+  const displayColorClass = `color-${color}`;
+  
+  const displayType = {
+    'skip': '🚫',
+    'reverse': '🔄',
+    'discard_all': '🗑️',
+    '+2': '+2',
+    '+6': '+6',
+    'wild': '🎨',
+    'wild_draw_10': '+10',
+    'wild_swap': '🌀',
+    'wild_skip_all': '💥',
+    'wild_draw_4_reverse': '↩️+4',
+    'hidden': '?'
+  }[type] || type;
+
+  const style = isMini ? { width: '40px', height: '60px', fontSize: '0.9rem' } : {};
+
+  return (
+    <div 
+      className={`uno-card ${displayColorClass} ${onClick && isSelectable ? '' : 'no-hover'}`} 
+      onClick={isSelectable ? onClick : undefined}
+      style={style}
+    >
+      <div className="uno-card-oval" />
+      <span style={{ zIndex: 5 }}>{displayType}</span>
+    </div>
+  );
+}
+
 function App() {
   const [socket, setSocket] = useState(null);
   const [roomIdInput, setRoomIdInput] = useState('');
@@ -998,6 +1029,190 @@ function App() {
                 )}
               </div>
             </div>
+          </>
+        ) : roomState.gameType === 'uno' ? (
+          <>
+            {/* The UNO Table container */}
+            <div className="poker-table-container">
+              <div className="uno-table" style={{ border: `15px solid #14171f`, borderColor: roomState.currentColor ? `var(--color-${roomState.currentColor}, #14171f)` : '#14171f' }}>
+                
+                {/* Event banner */}
+                {roomState.lastEvent && (
+                  <div className="last-action-indicator" style={{ top: '8%', fontSize: '0.85rem' }}>
+                    📢 {roomState.lastEvent}
+                  </div>
+                )}
+
+                {/* Stacking Penalty Banner */}
+                {roomState.drawPenalty > 0 && (
+                  <div className="spectating-notice glass" style={{ top: '15%', border: '1px solid #ff4757', background: 'rgba(255, 71, 87, 0.15)', color: '#ff4757', fontWeight: 'bold', animation: 'pulse-turn 1s infinite' }}>
+                    ⚠️ โทษสะสมสะสม: +{roomState.drawPenalty} ใบ! (ต้องสะสมหรือจั่ว!)
+                  </div>
+                )}
+
+                {/* Color selector popup (Active player choose color) */}
+                {roomState.gameState === 'COLOR_SELECT' && roomState.players[roomState.turnIndex]?.id === socket.id && (
+                  <div className="color-select-popup">
+                    <span className="coup-prompt-title">🎨 เลือกสีที่ต้องการเปลี่ยน</span>
+                    <div className="color-select-grid">
+                      <button className="color-btn btn-red" onClick={() => socket.emit('unoSelectColor', { color: 'red' })}>แดง</button>
+                      <button className="color-btn btn-green" onClick={() => socket.emit('unoSelectColor', { color: 'green' })}>เขียว</button>
+                      <button className="color-btn btn-blue" onClick={() => socket.emit('unoSelectColor', { color: 'blue' })}>ฟ้า</button>
+                      <button className="color-btn btn-yellow" onClick={() => socket.emit('unoSelectColor', { color: 'yellow' })}>เหลือง</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Keep or Play choice for drawn card */}
+                {roomState.recentlyDrawnCard && roomState.players[roomState.turnIndex]?.id === socket.id && (
+                  <div className="color-select-popup" style={{ width: '300px' }}>
+                    <span className="coup-prompt-title">🎲 จั่วได้การ์ดที่เล่นได้!</span>
+                    <div style={{ display: 'flex', justifyContent: 'center', margin: '14px 0' }}>
+                      <UnoCard color={roomState.recentlyDrawnCard.color} type={roomState.recentlyDrawnCard.type} isSelectable={false} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button className="btn-primary" style={{ flex: 1, padding: '8px 0', fontSize: '0.8rem' }} onClick={() => socket.emit('unoPlayCard', { cardId: roomState.recentlyDrawnCard.id })}>
+                        วางทันที (Play)
+                      </button>
+                      <button className="btn-secondary" style={{ flex: 1, padding: '8px 0', fontSize: '0.8rem' }} onClick={() => socket.emit('unoKeepCard')}>
+                        เก็บขึ้นมือ (Keep)
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Center Piles */}
+                <div className="uno-center-pile">
+                  {/* Draw Pile (Card back) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                    <div 
+                      className="uno-card uno-card-back" 
+                      onClick={() => {
+                        const isMyTurn = roomState.players[roomState.turnIndex]?.id === socket.id;
+                        if (isMyTurn && roomState.gameState === 'PLAYING' && !roomState.recentlyDrawnCard) {
+                          socket.emit('unoDrawCard');
+                        }
+                      }}
+                      style={{ cursor: roomState.players[roomState.turnIndex]?.id === socket.id && roomState.gameState === 'PLAYING' && !roomState.recentlyDrawnCard ? 'pointer' : 'default' }}
+                    >
+                    </div>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>กองจั่ว (Draw)</span>
+                  </div>
+
+                  {/* Discard Pile */}
+                  {roomState.currentCard && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                      <UnoCard color={roomState.currentColor} type={roomState.currentType} isSelectable={false} />
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                        สีปัจจุบัน: 
+                        <span 
+                          className={`uno-active-color-indicator color-dot-${roomState.currentColor}`} 
+                          style={{ marginLeft: '4px', verticalAlign: 'middle' }}
+                        />
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Circular Players */}
+                {playerNodes.map(({ player, x, y, isTurn }) => {
+                  const isMyNode = player.id === socket.id;
+                  return (
+                    <div 
+                      key={player.id}
+                      className={`player-node ${isTurn ? 'is-turn' : ''} ${player.spectating ? 'folded' : ''}`}
+                      style={{ left: `${x}%`, top: `${y}%` }}
+                    >
+                      {/* Cards counter */}
+                      {!player.spectating && (
+                        <div className="uno-cards-counter" style={{ background: player.cardCount >= 20 ? '#ff4757' : player.cardCount === 1 ? '#ffa502' : '#2ed573' }}>
+                          🎴 {player.cardCount}
+                        </div>
+                      )}
+
+                      {/* UNO shout indicator */}
+                      {player.cardCount === 1 && (
+                        <div className="target-select-indicator" style={{ background: '#ffa502', animation: 'pulse-turn 0.8s infinite' }}>
+                          🔊 UNO!
+                        </div>
+                      )}
+
+                      {/* Avatar */}
+                      <div className="player-avatar-wrapper">
+                        <div className="player-avatar">
+                          {player.name.substring(0, 2).toUpperCase()}
+                        </div>
+                      </div>
+
+                      {/* Player Info Card */}
+                      <div className="player-info-card">
+                        <div className="player-name">{player.name} {isMyNode && '(คุณ)'}</div>
+                        <div className="player-chips" style={{ fontSize: '0.75rem' }}>
+                          {player.spectating ? '☠️ ตกรอบ / ผู้ชม' : `การ์ด: ${player.cardCount} ใบ`}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bottom active player hand */}
+            <div className="uno-hand-wrapper">
+              <div className="uno-hand-scroll">
+                {myPlayer && !myPlayer.spectating && myPlayer.cards && myPlayer.cards.map((c) => {
+                  // Card playable checks
+                  const isMyTurn = roomState.players[roomState.turnIndex]?.id === socket.id;
+                  const isPlayableColor = c.color === 'wild' || c.color === roomState.currentColor;
+                  const isPlayableType = c.type === roomState.currentType;
+
+                  let isPlayable = isMyTurn && roomState.gameState === 'PLAYING' && !roomState.recentlyDrawnCard && (isPlayableColor || isPlayableType);
+                  
+                  // Stacking check: If drawPenalty > 0, we can ONLY play equal/greater draw cards
+                  if (roomState.drawPenalty > 0) {
+                    const isDrawCard = c.type === '+2' || c.type === '+6' || c.type === 'wild_draw_10' || c.type === 'wild_draw_4_reverse';
+                    if (isDrawCard) {
+                      const getVal = (t) => {
+                        if (t === '+2') return 2;
+                        if (t === 'wild_draw_4_reverse') return 4;
+                        if (t === '+6') return 6;
+                        if (t === 'wild_draw_10') return 10;
+                        return 0;
+                      };
+                      const activePenaltyCardType = roomState.currentCard.type;
+                      isPlayable = isMyTurn && roomState.gameState === 'PLAYING' && getVal(c.type) >= getVal(activePenaltyCardType);
+                    } else {
+                      isPlayable = false;
+                    }
+                  }
+
+                  return (
+                    <UnoCard 
+                      key={c.id} 
+                      color={c.color} 
+                      type={c.type} 
+                      onClick={() => socket.emit('unoPlayCard', { cardId: c.id })}
+                      isSelectable={isPlayable}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bottom action bar overlay for Draw Penalty */}
+            {roomState.drawPenalty > 0 && roomState.players[roomState.turnIndex]?.id === socket.id && (
+              <div className="action-panel-container">
+                <div className="action-bar glass" style={{ minHeight: '60px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => socket.emit('unoResolvePenalty')}
+                    style={{ background: '#ff4757', color: '#fff', border: 'none', boxShadow: '0 4px 15px rgba(255, 71, 87, 0.4)', padding: '10px 24px', width: 'auto', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    ☠️ ยอมรับโทษและจั่วการ์ด +{roomState.drawPenalty} ใบ
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <>

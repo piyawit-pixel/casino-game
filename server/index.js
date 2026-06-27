@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { Room } from './room.js';
 import { CheckersRoom } from './checkersRoom.js';
 import { CoupRoom } from './coupRoom.js';
+import { UnoRoom } from './unoRoom.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,7 +65,7 @@ io.on('connection', (socket) => {
       return;
     }
     const roomId = generateRoomId();
-    const room = gameType === 'checkers' ? new CheckersRoom(roomId) : gameType === 'coup' ? new CoupRoom(roomId) : new Room(roomId);
+    const room = gameType === 'checkers' ? new CheckersRoom(roomId) : gameType === 'coup' ? new CoupRoom(roomId) : gameType === 'uno' ? new UnoRoom(roomId) : new Room(roomId);
     rooms.set(roomId, room);
 
     const player = room.addPlayer(socket.id, name.trim());
@@ -271,6 +272,67 @@ io.on('connection', (socket) => {
     if (!room || room.gameType !== 'coup') return;
     try {
       room.exchangeSelect(socket.id, keptIndices);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  // UNO Game events
+  socket.on('unoPlayCard', ({ cardId }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'uno') return;
+    try {
+      room.playCard(socket.id, cardId);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('unoDrawCard', () => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'uno') return;
+    try {
+      room.drawCard(socket.id);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('unoSelectColor', ({ color }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'uno') return;
+    try {
+      room.selectColor(socket.id, color);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('unoKeepCard', () => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'uno') return;
+    try {
+      room.keepDrawnCard(socket.id);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('unoResolvePenalty', () => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'uno') return;
+    try {
+      room.resolveDrawPenalty(socket.id);
       broadcastRoomState(currentRoomId);
     } catch (err) {
       socket.emit('errorMsg', err.message);
