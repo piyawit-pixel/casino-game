@@ -262,6 +262,8 @@ export class UndercoverRoom {
     const selectedPair = availablePairs[Math.floor(Math.random() * availablePairs.length)];
     this.usedPairsHistory.push(selectedPair.civilian);
 
+    console.log(`[Undercover] Starting game. Room ID: ${this.id}. Selected word pair:`, selectedPair, `History count: ${this.usedPairsHistory.length}`);
+
     this.civilianWord = selectedPair.civilian;
     this.undercoverWord = selectedPair.undercover;
 

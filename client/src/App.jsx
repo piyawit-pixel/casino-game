@@ -2002,9 +2002,16 @@ function App() {
                 )}
 
                 {roomState.gameState === 'GAME_OVER' && (
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    การสู้ดีลธุรกิจอย่าซ่ากับบอสสิ้นสุดลงแล้ว! หัวหน้าสามารถสับแจกตาถัดไปเริ่มใหม่ต่อได้เลย
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      การสู้ดีลธุรกิจอย่าซ่ากับบอสสิ้นสุดลงแล้ว! หัวหน้าสามารถกดเริ่มใหม่ได้เลย
+                    </span>
+                    {isHost && (
+                      <button className="btn-primary" onClick={handleStartGame} style={{ width: 'auto', padding: '8px 24px', margin: 0 }}>
+                        🔄 เริ่มใหม่ (Play Again)
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -2226,9 +2233,16 @@ function App() {
                 )}
 
                 {roomState.gameState === 'GAME_OVER' && (
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    เกมสิ้นสุดลงแล้ว! หัวหน้าห้องสามารถกดสลับหรือแจกตาใหม่ต่อได้เลย
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      เกมสิ้นสุดลงแล้ว! หัวหน้าห้องสามารถกดเริ่มใหม่ได้เลย
+                    </span>
+                    {isHost && (
+                      <button className="btn-primary" onClick={handleStartGame} style={{ width: 'auto', padding: '8px 24px', margin: 0 }}>
+                        🔄 เริ่มใหม่ (Play Again)
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -2435,9 +2449,16 @@ function App() {
                 )}
 
                 {roomState.gameState === 'GAME_OVER' && (
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    การสืบคดีเสร็จสิ้นแล้ว! หัวหน้าห้องสามารถแจกตาถัดไปด้านซ้ายเพื่อเล่นต่อ
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      การสืบคดีเสร็จสิ้นแล้ว! หัวหน้าห้องสามารถกดเริ่มใหม่ได้เลย
+                    </span>
+                    {isHost && (
+                      <button className="btn-primary" onClick={handleStartGame} style={{ width: 'auto', padding: '8px 24px', margin: 0 }}>
+                        🔄 เริ่มใหม่ (Play Again)
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
