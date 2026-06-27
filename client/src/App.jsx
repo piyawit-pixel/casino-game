@@ -270,6 +270,7 @@ function App() {
   const [slotWinMessage, setSlotWinMessage] = useState('');
   
   const chatMessagesRef = useRef(null);
+  const insiderGuessesRef = useRef(null);
 
   // Verify token on mount or when token changes
   useEffect(() => {
@@ -458,12 +459,34 @@ function App() {
     };
   }, [token]);
 
-  // Scroll chat to bottom on new messages
+  // Scroll chat to bottom on new messages and when chat tab expands/opens
   useEffect(() => {
-    if (chatMessagesRef.current) {
-      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    const scrollToBottom = () => {
+      if (chatMessagesRef.current) {
+        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+      }
+    };
+
+    // Scroll immediately
+    scrollToBottom();
+
+    // Scroll cascade during CSS transition to bottom of newly expanded height
+    const timers = [
+      setTimeout(scrollToBottom, 50),
+      setTimeout(scrollToBottom, 150),
+      setTimeout(scrollToBottom, 300),
+      setTimeout(scrollToBottom, 450)
+    ];
+
+    return () => timers.forEach(clearTimeout);
+  }, [roomState?.messages?.length, chatCollapsed]);
+
+  // Scroll insider guesses to bottom when a new guess is added
+  useEffect(() => {
+    if (insiderGuessesRef.current) {
+      insiderGuessesRef.current.scrollTop = insiderGuessesRef.current.scrollHeight;
     }
-  }, [roomState?.messages?.length]);
+  }, [roomState?.guesses?.length]);
 
   const handleCreateRoom = (e) => {
     e.preventDefault();
@@ -2338,7 +2361,7 @@ function App() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--primary)' }}>👮 แผงควบคุมคำทายของ Master:</span>
                       
-                      <div className="insider-guesses-box">
+                      <div className="insider-guesses-box" ref={insiderGuessesRef}>
                         {roomState.guesses.length === 0 ? (
                           <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>ยังไม่มีคำทายเข้ามา...</span>
                         ) : (
