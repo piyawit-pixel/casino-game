@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
+import { soundManager } from './soundManager';
 import './App.css';
 
 const SUIT_SYMBOLS = {
@@ -183,6 +184,8 @@ function App() {
   const [undercoverDescInput, setUndercoverDescInput] = useState('');
   const [undercoverWhiteGuessInput, setUndercoverWhiteGuessInput] = useState('');
   const [bossProposedShares, setBossProposedShares] = useState({});
+  const [soundMuted, setSoundMuted] = useState(false);
+  const prevRoomStateRef = useRef(null);
   
   const chatEndRef = useRef(null);
   const socketRef = useRef(null);
@@ -209,6 +212,9 @@ function App() {
     });
 
     newSocket.on('roomState', (state) => {
+      const prev = prevRoomStateRef.current;
+      prevRoomStateRef.current = state;
+
       setRoomState(state);
       
       // Auto-set the initial raise slider value when turn updates (poker-only)
@@ -217,6 +223,32 @@ function App() {
         if (myPlayer && state.currentTurnIndex !== null && state.players[state.currentTurnIndex]?.id === newSocket.id) {
           const minVal = Math.min(state.minRaise, myPlayer.chips + myPlayer.currentBet);
           setRaiseAmount(minVal);
+        }
+      }
+
+      // Trigger Sound Effects based on state diff
+      if (prev) {
+        // 1. Turn changed
+        const currentTurnIndex = state.gameType === 'poker' ? state.currentTurnIndex : state.turnIndex;
+        const prevTurnIndex = prev.gameType === 'poker' ? prev.currentTurnIndex : prev.turnIndex;
+        if (currentTurnIndex !== prevTurnIndex && currentTurnIndex !== null && state.gameState === 'PLAYING') {
+          soundManager.playDing();
+        }
+
+        // 2. Event-based sounds
+        if (state.lastEvent !== prev.lastEvent && state.lastEvent) {
+          const event = state.lastEvent.toLowerCase();
+          if (event.includes('ยิงปืน') || event.includes('bang') || event.includes('ดวลปืน') || event.includes('ยิง')) {
+            soundManager.playGunshot();
+          } else if (event.includes('stop') || event.includes('หยุด') || event.includes('ขัดขวาง') || event.includes('ท้าทาย') || event.includes('จับโกหก')) {
+            soundManager.playBuzzer();
+          } else if (event.includes('สำเร็จ') || event.includes('ชนะ') || event.includes('โค่นล้ม') || event.includes('game over')) {
+            soundManager.playSlam();
+          } else if (event.includes('ชิป') || event.includes('เดิมพัน') || event.includes('เงิน') || event.includes('หุ้น') || event.includes('coin')) {
+            soundManager.playCoin();
+          } else {
+            soundManager.playWhoosh();
+          }
         }
       }
     });
@@ -791,6 +823,16 @@ function App() {
             <span>ROOM: {roomState.id}</span>
             <button id="copy-room-code-btn" className="copy-btn" onClick={copyRoomCode}>
               {copySuccess ? 'คัดลอกแล้ว!' : '📋 คัดลอกโค้ด'}
+            </button>
+            <button 
+              className="copy-btn" 
+              onClick={() => {
+                const isEnabled = soundManager.toggleSound();
+                setSoundMuted(!isEnabled);
+              }}
+              style={{ background: 'transparent', marginLeft: '8px', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '8px' }}
+            >
+              {soundMuted ? '🔇 ปิดเสียง' : '🔊 เปิดเสียง'}
             </button>
           </div>
 
