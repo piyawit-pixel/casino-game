@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Room } from './room.js';
 import { CheckersRoom } from './checkersRoom.js';
+import { CoupRoom } from './coupRoom.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,7 +64,7 @@ io.on('connection', (socket) => {
       return;
     }
     const roomId = generateRoomId();
-    const room = gameType === 'checkers' ? new CheckersRoom(roomId) : new Room(roomId);
+    const room = gameType === 'checkers' ? new CheckersRoom(roomId) : gameType === 'coup' ? new CoupRoom(roomId) : new Room(roomId);
     rooms.set(roomId, room);
 
     const player = room.addPlayer(socket.id, name.trim());
@@ -173,6 +174,103 @@ io.on('connection', (socket) => {
 
     try {
       room.makeMove(socket.id, from, to);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  // Coup Game events
+  socket.on('coupAction', ({ type, targetId }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'coup') return;
+    try {
+      room.selectAction(socket.id, type, targetId);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('coupChallenge', () => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'coup') return;
+    try {
+      room.challengeAction(socket.id);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('coupBlock', ({ blockRole }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'coup') return;
+    try {
+      room.blockAction(socket.id, blockRole);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('coupChallengeBlock', () => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'coup') return;
+    try {
+      room.challengeBlock(socket.id);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('coupPass', () => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'coup') return;
+    try {
+      room.passAction(socket.id);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('coupReveal', ({ cardIdx }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'coup') return;
+    try {
+      room.revealCard(socket.id, cardIdx);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('coupDiscard', ({ cardIdx }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'coup') return;
+    try {
+      room.discardCard(socket.id, cardIdx);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('coupExchangeSelect', ({ keptIndices }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'coup') return;
+    try {
+      room.exchangeSelect(socket.id, keptIndices);
       broadcastRoomState(currentRoomId);
     } catch (err) {
       socket.emit('errorMsg', err.message);

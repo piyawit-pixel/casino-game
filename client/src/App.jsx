@@ -58,6 +58,28 @@ function Card({ rank, suit, isMini = false, isDealt = false }) {
   );
 }
 
+function CoupCard({ role, dead, onClick, isSelectable }) {
+  const roleClass = dead ? 'dead' : role === 'hidden' ? 'role-hidden' : `role-${role}`;
+  const displayRole = {
+    duke: 'Duke (ดยุก)',
+    assassin: 'Assassin (นักฆ่า)',
+    captain: 'Captain (กัปตัน)',
+    ambassador: 'Ambassador (ทูต)',
+    contessa: 'Contessa (คอนเตส)',
+    hidden: 'Influence'
+  }[role] || role;
+
+  return (
+    <div 
+      className={`coup-card ${roleClass}`} 
+      onClick={onClick} 
+      style={{ cursor: isSelectable ? 'pointer' : 'default' }}
+    >
+      <span>{displayRole}</span>
+    </div>
+  );
+}
+
 function App() {
   const [socket, setSocket] = useState(null);
   const [roomIdInput, setRoomIdInput] = useState('');
@@ -70,6 +92,8 @@ function App() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [gameType, setGameType] = useState('poker'); // 'poker' or 'checkers'
   const [selectedSquare, setSelectedSquare] = useState(null); // { row, col }
+  const [targetSelectMode, setTargetSelectMode] = useState(null); // 'steal' | 'assassinate' | 'coup'
+  const [selectedExchangeIndices, setSelectedExchangeIndices] = useState([]); // indices for Ambassador swap
   
   const chatEndRef = useRef(null);
   const socketRef = useRef(null);
@@ -180,6 +204,328 @@ function App() {
     }
   };
 
+  const handlePlayerNodeClick = (targetPlayer) => {
+    if (!targetSelectMode) return;
+    socket.emit('coupAction', { type: targetSelectMode, targetId: targetPlayer.id });
+    setTargetSelectMode(null);
+  };
+
+  const renderCoupActionPanel = () => {
+    if (!roomState || roomState.gameType !== 'coup') return null;
+
+    const myActivePlayer = roomState.players.find(p => p.id === socket.id);
+    const activeActor = roomState.players[roomState.turnIndex];
+    const isMyTurn = activeActor?.id === socket.id;
+
+    if (!isMyTurn || roomState.gameState !== 'PLAYING') {
+      return (
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          {myActivePlayer?.isDead ? 'คุณตายแล้ว นั่งชมเกมอยู่...' : 'กรุณารอตาของคุณ...'}
+        </span>
+      );
+    }
+
+    if (myActivePlayer?.coins >= 10) {
+      return (
+        <button 
+          className="coup-action-btn btn-coup-action" 
+          onClick={() => setTargetSelectMode('coup')}
+          style={{ gridColumn: 'span 4', width: '100%', height: '54px' }}
+        >
+          <span className="coup-action-title">⚔️ COUP (บังคับ)</span>
+          <span className="coup-action-cost">จ่าย 7 เหรียญ</span>
+        </button>
+      );
+    }
+
+    return (
+      <div className="coup-action-panel">
+        <button className="coup-action-btn" onClick={() => socket.emit('coupAction', { type: 'income' })}>
+          <span className="coup-action-title">Income</span>
+          <span className="coup-action-cost">+1 เหรียญ</span>
+        </button>
+
+        <button className="coup-action-btn" onClick={() => socket.emit('coupAction', { type: 'foreign_aid' })}>
+          <span className="coup-action-title">Foreign Aid</span>
+          <span className="coup-action-cost">+2 เหรียญ</span>
+        </button>
+
+        <button className="coup-action-btn" onClick={() => socket.emit('coupAction', { type: 'tax' })}>
+          <span className="coup-action-title">Tax (Duke)</span>
+          <span className="coup-action-cost">+3 เหรียญ</span>
+        </button>
+
+        <button className="coup-action-btn" onClick={() => setTargetSelectMode('steal')}>
+          <span className="coup-action-title">Steal (Captain)</span>
+          <span className="coup-action-cost">ขโมย 2 เหรียญ</span>
+        </button>
+
+        <button 
+          className="coup-action-btn" 
+          disabled={myActivePlayer?.coins < 3} 
+          onClick={() => setTargetSelectMode('assassinate')}
+        >
+          <span className="coup-action-title">Assassinate</span>
+          <span className="coup-action-cost">จ่าย 3 เหรียญ</span>
+        </button>
+
+        <button className="coup-action-btn" onClick={() => socket.emit('coupAction', { type: 'exchange' })}>
+          <span className="coup-action-title">Exchange (Amb)</span>
+          <span className="coup-action-cost">สลับไพ่ 2 ใบ</span>
+        </button>
+
+        <button 
+          className="coup-action-btn btn-coup-action" 
+          disabled={myActivePlayer?.coins < 7} 
+          onClick={() => setTargetSelectMode('coup')}
+          style={{ gridColumn: 'span 2' }}
+        >
+          <span className="coup-action-title">⚔️ COUP</span>
+          <span className="coup-action-cost">จ่าย 7 เหรียญ</span>
+        </button>
+      </div>
+    );
+  };
+
+  const renderCoupCenterPrompt = () => {
+    if (!roomState || roomState.gameType !== 'coup') return null;
+
+    const myActivePlayer = roomState.players.find(p => p.id === socket.id);
+    const activeActor = roomState.players[roomState.turnIndex];
+    const isMyTurn = activeActor?.id === socket.id;
+
+    switch (roomState.gameState) {
+      case 'PLAYING':
+        return (
+          <div className="coup-prompt-desc">
+            ตาของ <b style={{ color: 'var(--primary)' }}>{activeActor?.name}</b> กำลังเลือกแอคชัน...
+          </div>
+        );
+      case 'ACTION_PENDING':
+        const activeAction = roomState.activeAction;
+        if (!activeAction) return null;
+
+        const actorName = roomState.players.find(p => p.id === activeAction.sourceId)?.name;
+        const targetName = activeAction.targetId 
+          ? roomState.players.find(p => p.id === activeAction.targetId)?.name 
+          : '';
+
+        if (activeAction.sourceId === socket.id) {
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div className="coup-prompt-desc">
+                คุณประกาศใช้ <b style={{ color: 'var(--primary)' }}>{activeAction.type}</b> {targetName && `ใส่ ${targetName}`}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                {activeAction.status === 'blocked' 
+                  ? `รอการท้าทายจากคุณ หรือกดยอมรับการบล็อค` 
+                  : `รอเพื่อนๆ ตัดสินใจ...`}
+              </div>
+              {activeAction.status === 'blocked' && (
+                <div className="coup-prompt-buttons">
+                  <button className="btn-primary" onClick={() => socket.emit('coupChallengeBlock')} style={{ background: '#ff4757', color: '#fff', boxShadow: 'none' }}>
+                    ⚔️ จับโกหกการขัดขวาง (Challenge Block)
+                  </button>
+                  <button className="btn-secondary" onClick={() => socket.emit('coupPass')}>
+                    ยอมรับการโดนบล็อค (Accept Block)
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        const canIBlock = activeAction.status !== 'blocked' && (
+          activeAction.type === 'foreign_aid' 
+            ? (myActivePlayer && !myActivePlayer.isDead && myActivePlayer.id !== activeAction.sourceId)
+            : (activeAction.type === 'steal' || activeAction.type === 'assassinate')
+              ? myActivePlayer?.id === activeAction.targetId
+              : false
+        );
+
+        const canIChallenge = activeAction.status !== 'blocked' && activeAction.claimedRole && myActivePlayer && !myActivePlayer.isDead;
+        const canIChallengeBlock = activeAction.status === 'blocked' && myActivePlayer && !myActivePlayer.isDead && myActivePlayer.id !== activeAction.blockedBy;
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="coup-prompt-desc">
+              {activeAction.status === 'blocked' ? (
+                <span>
+                  <b>{roomState.players.find(p => p.id === activeAction.blockedBy)?.name}</b> ขัดขวางโดยอ้างตัวเป็น <b>{activeAction.blockedRole}</b>
+                </span>
+              ) : (
+                <span>
+                  <b>{actorName}</b> ประกาศใช้ <b>{activeAction.type}</b> {targetName && `ใส่ ${targetName}`}
+                </span>
+              )}
+            </div>
+            
+            {myActivePlayer && !myActivePlayer.isDead && !myActivePlayer.spectating && (
+              <div className="coup-prompt-buttons">
+                {canIChallenge && (
+                  <button className="btn-primary" onClick={() => socket.emit('coupChallenge')} style={{ background: '#ff4757', color: '#fff', boxShadow: 'none', marginBottom: '4px' }}>
+                    ⚔️ ท้าทายจับโกหก (Challenge)
+                  </button>
+                )}
+                {canIBlock && (
+                  <div style={{ display: 'flex', gap: '8px', width: '100%', marginBottom: '4px' }}>
+                    {activeAction.type === 'foreign_aid' && (
+                      <button className="btn-secondary" onClick={() => socket.emit('coupBlock', { blockRole: 'duke' })} style={{ flex: 1 }}>
+                        🛡️ บล็อค (ดยุก)
+                      </button>
+                    )}
+                    {activeAction.type === 'steal' && (
+                      <>
+                        <button className="btn-secondary" onClick={() => socket.emit('coupBlock', { blockRole: 'captain' })} style={{ flex: 1, fontSize: '0.75rem' }}>
+                          🛡️ บล็อค (กัปตัน)
+                        </button>
+                        <button className="btn-secondary" onClick={() => socket.emit('coupBlock', { blockRole: 'ambassador' })} style={{ flex: 1, fontSize: '0.75rem' }}>
+                          🛡️ บล็อค (ทูต)
+                        </button>
+                      </>
+                    )}
+                    {activeAction.type === 'assassinate' && (
+                      <button className="btn-secondary" onClick={() => socket.emit('coupBlock', { blockRole: 'contessa' })} style={{ flex: 1 }}>
+                        🛡️ บล็อค (คอนเตส)
+                      </button>
+                    )}
+                  </div>
+                )}
+                {canIChallengeBlock && (
+                  <button className="btn-primary" onClick={() => socket.emit('coupChallengeBlock')} style={{ background: '#ff4757', color: '#fff', boxShadow: 'none', marginBottom: '4px' }}>
+                    ⚔️ จับโกหกการบล็อค (Challenge Block)
+                  </button>
+                )}
+                {!roomState.hasPassed && (
+                  <button className="btn-secondary" onClick={() => socket.emit('coupPass')}>
+                    ผ่าน / ยอมรับ (Pass)
+                  </button>
+                )}
+                {roomState.hasPassed && (
+                  <span style={{ color: 'var(--accent-blue)', fontSize: '0.8rem', fontWeight: 'bold' }}>✓ ผ่านแล้ว รอเพื่อนๆ</span>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      case 'CHALLENGE_RESOLVING':
+        const challengedPlayerName = roomState.players.find(p => p.id === roomState.activeAction.sourceId)?.name;
+        const isChallengedMe = roomState.activeAction.sourceId === socket.id;
+
+        return (
+          <div className="coup-prompt-desc">
+            {isChallengedMe ? (
+              <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>
+                ⚠️ คุณถูกท้าทาย! คลิกเปิดไพ่ที่เคลม ({roomState.activeAction.claimedRole}) เพื่อสู้ตัวตน
+              </span>
+            ) : (
+              <span>รอ <b>{challengedPlayerName}</b> โชว์ไพ่สู้คดีท้าทาย...</span>
+            )}
+          </div>
+        );
+      case 'BLOCK_CHALLENGE_RESOLVING':
+        const blockerPlayerName = roomState.players.find(p => p.id === roomState.activeAction.blockedBy)?.name;
+        const isBlockerMe = roomState.activeAction.blockedBy === socket.id;
+
+        return (
+          <div className="coup-prompt-desc">
+            {isBlockerMe ? (
+              <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>
+                ⚠️ การขัดขวางของคุณถูกท้าทาย! คลิกเปิดไพ่ขัดขวาง ({roomState.activeAction.blockedRole}) เพื่อสู้ตัวตน
+              </span>
+            ) : (
+              <span>รอ <b>{blockerPlayerName}</b> โชว์ไพ่พิสูจน์การขัดขวาง...</span>
+            )}
+          </div>
+        );
+      case 'DISCARDING':
+        const discardPlayerName = roomState.players.find(p => p.id === roomState.pendingDiscardPlayerId)?.name;
+        const isDiscardMe = roomState.pendingDiscardPlayerId === socket.id;
+
+        return (
+          <div className="coup-prompt-desc">
+            {isDiscardMe ? (
+              <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>
+                ☠️ ไพ่ของคุณตายลง 1 ใบ! คลิกเลือกไพ่ที่จะทิ้ง (Discard)
+              </span>
+            ) : (
+              <span>รอ <b>{discardPlayerName}</b> เลือกทิ้งการ์ดเพื่อเสียอิทธิพล...</span>
+            )}
+          </div>
+        );
+      case 'EXCHANGING':
+        const isExchangerMe = activeActor?.id === socket.id;
+        
+        if (isExchangerMe) {
+          const myLiveCards = myActivePlayer?.cards.filter(c => !c.dead) || [];
+          const allOptions = [...myLiveCards.map(c => c.role), ...roomState.exchangeCards];
+
+          const handleExchangeCheckboxChange = (idx) => {
+            if (selectedExchangeIndices.includes(idx)) {
+              setSelectedExchangeIndices(selectedExchangeIndices.filter(i => i !== idx));
+            } else {
+              if (selectedExchangeIndices.length < myLiveCards.length) {
+                setSelectedExchangeIndices([...selectedExchangeIndices, idx]);
+              }
+            }
+          };
+
+          const submitExchange = () => {
+            if (selectedExchangeIndices.length !== myLiveCards.length) return;
+            socket.emit('coupExchangeSelect', { keptIndices: selectedExchangeIndices });
+            setSelectedExchangeIndices([]);
+          };
+
+          return (
+            <div className="exchange-selector-container">
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                เลือกไพ่ {myLiveCards.length} ใบที่คุณต้องการเก็บไว้:
+              </span>
+              <div className="exchange-cards-row">
+                {allOptions.map((role, idx) => (
+                  <label key={idx} className="exchange-card-option">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedExchangeIndices.includes(idx)} 
+                      onChange={() => handleExchangeCheckboxChange(idx)} 
+                    />
+                    <CoupCard role={role} dead={false} isSelectable={true} />
+                  </label>
+                ))}
+              </div>
+              <button 
+                className="btn-primary" 
+                disabled={selectedExchangeIndices.length !== myLiveCards.length} 
+                onClick={submitExchange}
+                style={{ width: 'auto', padding: '8px 16px', fontSize: '0.85rem' }}
+              >
+                ยืนยันสลับไพ่
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <div className="coup-prompt-desc">
+            รอ <b>{activeActor?.name}</b> แลกเปลี่ยนไพ่ทูต...
+          </div>
+        );
+      case 'GAME_OVER':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <span style={{ color: 'var(--primary)', fontSize: '1.2rem', fontWeight: 'bold' }}>
+              🏆 {roomState.winner?.name} ชนะการแข่งขัน!
+            </span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              โค่นอำนาจเพื่อนทุกคนบนโต๊ะสำเร็จ
+            </span>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   // Quick Bet presets
   const handleQuickBet = (multiplier) => {
     if (!roomState || !socket) return;
@@ -257,6 +603,19 @@ function App() {
                   <div className="game-type-card">
                     <span className="game-type-icon">🏁</span>
                     <span className="game-type-label">หมากฮอส</span>
+                  </div>
+                </label>
+                <label className="game-type-option">
+                  <input 
+                    type="radio" 
+                    name="gameType" 
+                    value="coup" 
+                    checked={gameType === 'coup'}
+                    onChange={() => setGameType('coup')} 
+                  />
+                  <div className="game-type-card">
+                    <span className="game-type-icon">👑</span>
+                    <span className="game-type-label">โค่นอำนาจ (Coup)</span>
                   </div>
                 </label>
               </div>
@@ -518,6 +877,128 @@ function App() {
               </div>
             )}
           </div>
+        ) : roomState.gameType === 'coup' ? (
+          <>
+            {/* The Coup Table container */}
+            <div className="poker-table-container">
+              <div className="coup-table">
+                {/* Event banner */}
+                {roomState.lastEvent && (
+                  <div className="last-action-indicator" style={{ top: '8%', fontSize: '0.85rem' }}>
+                    📢 {roomState.lastEvent}
+                  </div>
+                )}
+
+                {/* Center status prompt card */}
+                <div className="coup-center-prompt glass">
+                  <span className="coup-prompt-title">
+                    {roomState.gameState === 'PLAYING' ? 'กำลังเล่น (Playing)' : 
+                     roomState.gameState === 'ACTION_PENDING' ? 'รอยืนยันแอคชัน' :
+                     roomState.gameState === 'CHALLENGE_RESOLVING' ? 'จับโกหก (Challenge)' :
+                     roomState.gameState === 'BLOCK_CHALLENGE_RESOLVING' ? 'จับโกหกการขัดขวาง' :
+                     roomState.gameState === 'DISCARDING' ? 'เลือกทิ้งการ์ด' :
+                     roomState.gameState === 'EXCHANGING' ? 'เอกอัครราชทูตแลกเปลี่ยน' :
+                     roomState.gameState === 'GAME_OVER' ? 'จบการแข่งขัน' : ''}
+                  </span>
+
+                  {/* Sub status descriptions */}
+                  {renderCoupCenterPrompt()}
+                </div>
+
+                {/* Render circular players */}
+                {playerNodes.map(({ player, x, y, isTurn }) => {
+                  const isTargetable = targetSelectMode && player.id !== socket.id && !player.isDead && !player.spectating;
+                  const isMyNode = player.id === socket.id;
+
+                  return (
+                    <div 
+                      key={player.id}
+                      className={`player-node ${isTurn ? 'is-turn' : ''} ${player.isDead ? 'folded' : ''} ${isTargetable ? 'is-target' : ''}`}
+                      style={{ left: `${x}%`, top: `${y}%` }}
+                      onClick={() => isTargetable && handlePlayerNodeClick(player)}
+                    >
+                      {/* Render target selection banner */}
+                      {isTargetable && (
+                        <div className="target-select-indicator">
+                          🎯 เลือกคนนี้
+                        </div>
+                      )}
+
+                      {/* Coins bubble */}
+                      {!player.spectating && !player.isDead && (
+                        <div className="coup-coins-bubble">
+                          🪙 {player.coins}
+                        </div>
+                      )}
+
+                      {/* Avatar */}
+                      <div className="player-avatar-wrapper">
+                        <div className="player-avatar">
+                          {player.name.substring(0, 2).toUpperCase()}
+                        </div>
+                      </div>
+
+                      {/* Player Info Card */}
+                      <div className="player-info-card" style={{ marginBottom: '8px' }}>
+                        <div className="player-name">{player.name} {isMyNode && '(คุณ)'}</div>
+                        <div className="player-chips" style={{ fontSize: '0.75rem' }}>
+                          {player.spectating ? 'Spectator' : player.isDead ? '☠️ ตายแล้ว' : 'กำลังเล่น'}
+                        </div>
+                      </div>
+
+                      {/* Player Cards (Influence) */}
+                      {!player.spectating && player.cards && (
+                        <div className="coup-card-wrapper">
+                          {player.cards.map((c, cidx) => {
+                            const isSelectableReveal = (roomState.gameState === 'CHALLENGE_RESOLVING' && roomState.activeAction?.sourceId === socket.id && isMyNode && !c.dead) ||
+                                                      (roomState.gameState === 'BLOCK_CHALLENGE_RESOLVING' && roomState.activeAction?.blockedBy === socket.id && isMyNode && !c.dead);
+                            
+                            const isSelectableDiscard = roomState.gameState === 'DISCARDING' && roomState.pendingDiscardPlayerId === socket.id && isMyNode && !c.dead;
+                            
+                            const handleCardClick = () => {
+                              if (isSelectableReveal) {
+                                socket.emit('coupReveal', { cardIdx: cidx });
+                              } else if (isSelectableDiscard) {
+                                socket.emit('coupDiscard', { cardIdx: cidx });
+                              }
+                            };
+
+                            return (
+                              <CoupCard 
+                                key={cidx} 
+                                role={c.role} 
+                                dead={c.dead} 
+                                onClick={handleCardClick}
+                                isSelectable={isSelectableReveal || isSelectableDiscard}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Action Control Panel (Bottom) */}
+            <div className="action-panel-container">
+              <div className="action-bar glass" style={{ minHeight: '80px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                {targetSelectMode ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%' }}>
+                    <span style={{ color: 'var(--accent)', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                      🎯 เลือกผู้เล่นเป้าหมายสำหรับคำสั่ง {targetSelectMode === 'steal' ? 'ขโมยเงิน' : targetSelectMode === 'assassinate' ? 'ลอบสังหาร' : 'โค่นอำนาจ'}
+                    </span>
+                    <button className="btn-secondary" onClick={() => setTargetSelectMode(null)} style={{ padding: '6px 12px', width: 'auto', fontSize: '0.8rem', cursor: 'pointer' }}>
+                      ยกเลิก (Cancel)
+                    </button>
+                  </div>
+                ) : (
+                  renderCoupActionPanel()
+                )}
+              </div>
+            </div>
+          </>
         ) : (
           <>
             {/* The Poker Table container */}

@@ -1012,3 +1012,279 @@
   font-weight: 700;
   color: var(--text-primary);
 }
+
+/* Coup Game Styling */
+.coup-table {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, #252a34 0%, #15181f 100%); /* Cyberpunk charcoal table */
+  border: 15px solid #1f232b;
+  outline: 4px solid var(--primary); /* Gold border */
+  border-radius: 500px;
+  box-shadow: inset 0 20px 50px rgba(0,0,0,0.9), 0 25px 50px rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.coup-card-wrapper {
+  display: flex;
+  gap: 8px;
+  margin-top: -30px;
+  z-index: 15;
+}
+
+.coup-card {
+  width: 50px;
+  height: 75px;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.65rem;
+  position: relative;
+  text-align: center;
+  text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,0.1);
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Role Specific Colors */
+.coup-card.role-duke {
+  background: linear-gradient(135deg, #7b1fa2 0%, #4a148c 100%);
+  border-color: #9c27b0;
+}
+
+.coup-card.role-assassin {
+  background: linear-gradient(135deg, #424242 0%, #212121 100%);
+  border-color: #616161;
+}
+
+.coup-card.role-captain {
+  background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+  border-color: #2196f3;
+}
+
+.coup-card.role-ambassador {
+  background: linear-gradient(135deg, #388e3c 0%, #1b5e20 100%);
+  border-color: #4caf50;
+}
+
+.coup-card.role-contessa {
+  background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+  border-color: #f44336;
+}
+
+.coup-card.role-hidden {
+  background: linear-gradient(135deg, #1a202c 0%, #0d1117 100%);
+  border: 2px solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coup-card.role-hidden::after {
+  content: '⚡';
+  font-size: 1.4rem;
+  color: var(--primary);
+  opacity: 0.8;
+}
+
+.coup-card.dead {
+  filter: grayscale(1) opacity(0.35);
+  border-color: rgba(255,255,255,0.05);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.coup-card.dead::before {
+  content: '☠️';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5rem;
+  z-index: 10;
+  opacity: 0.85;
+}
+
+/* Coup Player Node adjustments */
+.player-node .coup-coins-bubble {
+  position: absolute;
+  top: 48px;
+  right: -4px;
+  background: linear-gradient(135deg, #ffd700 0%, #ff9f00 100%);
+  color: #000;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid #cca300;
+  z-index: 20;
+}
+
+.player-node.is-target {
+  cursor: pointer;
+}
+
+.player-node.is-target:hover .player-avatar-wrapper {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent);
+  transform: scale(1.05);
+  transition: all var(--transition-fast);
+}
+
+.target-select-indicator {
+  position: absolute;
+  top: -45px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 10px;
+  animation: pulse-turn 1.2s infinite;
+  white-space: nowrap;
+}
+
+/* Coup center prompting card */
+.coup-center-prompt {
+  background: rgba(15, 18, 25, 0.9);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 20px 24px;
+  border-radius: 16px;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.coup-prompt-title {
+  color: var(--primary);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.coup-prompt-desc {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.coup-prompt-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.coup-action-panel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 900px;
+  margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .coup-action-panel {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.coup-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #fff;
+  transition: all var(--transition-fast);
+}
+
+.coup-action-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.coup-action-btn:disabled {
+  opacity: 0.25;
+}
+
+.coup-action-btn.btn-coup-action {
+  background: linear-gradient(135deg, #ffd700 0%, #cca300 100%);
+  color: #000;
+  border: none;
+}
+
+.coup-action-btn.btn-coup-action:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ffea70 0%, #ffd700 100%);
+}
+
+.coup-action-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.coup-action-cost {
+  font-size: 0.65rem;
+  color: var(--primary);
+}
+
+.coup-action-btn.btn-coup-action .coup-action-cost {
+  color: rgba(0,0,0,0.65);
+  font-weight: 700;
+}
+
+/* Ambassador Exchange selector */
+.exchange-selector-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.exchange-cards-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.exchange-card-option {
+  position: relative;
+  cursor: pointer;
+}
+
+.exchange-card-option input {
+  display: none;
+}
+
+.exchange-card-option input:checked + .coup-card {
+  outline: 3px solid var(--accent-blue);
+  box-shadow: 0 0 15px rgba(46, 213, 115, 0.4);
+  transform: scale(1.05);
+}
+
