@@ -10,6 +10,7 @@ import { CoupRoom } from './coupRoom.js';
 import { UnoRoom } from './unoRoom.js';
 import { BangRoom } from './bangRoom.js';
 import { InsiderRoom } from './insiderRoom.js';
+import { UndercoverRoom } from './undercoverRoom.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,7 +68,7 @@ io.on('connection', (socket) => {
       return;
     }
     const roomId = generateRoomId();
-    const room = gameType === 'checkers' ? new CheckersRoom(roomId) : gameType === 'coup' ? new CoupRoom(roomId) : gameType === 'uno' ? new UnoRoom(roomId) : gameType === 'bang' ? new BangRoom(roomId) : gameType === 'insider' ? new InsiderRoom(roomId) : new Room(roomId);
+    const room = gameType === 'checkers' ? new CheckersRoom(roomId) : gameType === 'coup' ? new CoupRoom(roomId) : gameType === 'uno' ? new UnoRoom(roomId) : gameType === 'bang' ? new BangRoom(roomId) : gameType === 'insider' ? new InsiderRoom(roomId) : gameType === 'undercover' ? new UndercoverRoom(roomId) : new Room(roomId);
     rooms.set(roomId, room);
 
     const player = room.addPlayer(socket.id, name.trim());
@@ -433,6 +434,43 @@ io.on('connection', (socket) => {
     if (!room || room.gameType !== 'insider') return;
     try {
       room.votePlayer(socket.id, targetId);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  // Undercover Game events
+  socket.on('undercoverSubmitDesc', ({ text }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'undercover') return;
+    try {
+      room.submitDescription(socket.id, text);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('undercoverVote', ({ targetId }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'undercover') return;
+    try {
+      room.votePlayer(socket.id, targetId);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('undercoverWhiteGuess', ({ text }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'undercover') return;
+    try {
+      room.guessCivilianWord(socket.id, text);
       broadcastRoomState(currentRoomId);
     } catch (err) {
       socket.emit('errorMsg', err.message);
