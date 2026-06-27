@@ -914,7 +914,7 @@ function App() {
             </div>
           ) : (
             /* Tab Bar (If NOT Logged In) */
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'rgba(0,0,0,0.3)', padding: '5px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'rgba(0,0,0,0.04)', padding: '5px', borderRadius: '10px', border: '1px solid rgba(0, 0, 0, 0.08)' }}>
               <button 
                 type="button" 
                 onClick={() => { setLobbyTab('auth'); setAuthError(''); }} 
@@ -924,7 +924,7 @@ function App() {
                   borderRadius: '8px', 
                   border: 'none', 
                   background: lobbyTab === 'auth' ? 'var(--primary)' : 'transparent', 
-                  color: lobbyTab === 'auth' ? '#000' : 'var(--text-muted)', 
+                  color: lobbyTab === 'auth' ? '#fff' : 'var(--text-muted)', 
                   fontWeight: 'bold', 
                   cursor: 'pointer',
                   fontSize: '0.85rem',
@@ -942,7 +942,7 @@ function App() {
                   borderRadius: '8px', 
                   border: 'none', 
                   background: lobbyTab === 'guest' ? 'var(--primary)' : 'transparent', 
-                  color: lobbyTab === 'guest' ? '#000' : 'var(--text-muted)', 
+                  color: lobbyTab === 'guest' ? '#fff' : 'var(--text-muted)', 
                   fontWeight: 'bold', 
                   cursor: 'pointer',
                   fontSize: '0.85rem',
@@ -1034,8 +1034,8 @@ function App() {
                     value={gameType}
                     onChange={(e) => setGameType(e.target.value)}
                     style={{ 
-                      background: 'rgba(22, 17, 13, 0.95)', 
-                      border: '1px solid rgba(255, 183, 3, 0.25)', 
+                      background: '#ffffff', 
+                      border: '1px solid rgba(0, 0, 0, 0.15)', 
                       color: 'var(--text-primary)',
                       fontSize: '0.95rem',
                       padding: '12px 16px',
@@ -1045,14 +1045,14 @@ function App() {
                       outline: 'none'
                     }}
                   >
-                    <option value="poker" style={{ background: '#221913', color: '#fff' }}>♣️ เท็กซัส โฮลเด็ม โป๊กเกอร์ (Texas Hold'em)</option>
-                    <option value="checkers" style={{ background: '#221913', color: '#fff' }}>🏁 หมากฮอสไทย (Thai Checkers)</option>
-                    <option value="coup" style={{ background: '#221913', color: '#fff' }}>👑 โค่นอำนาจ (Coup - Social Deduction)</option>
-                    <option value="uno" style={{ background: '#221913', color: '#fff' }}>🎴 อูโน่ ไร้ความปรานี (UNO No Mercy)</option>
-                    <option value="bang" style={{ background: '#221913', color: '#fff' }}>🤠 นายอำเภอดวลปืน (BANG! Cowboy)</option>
-                    <option value="insider" style={{ background: '#221913', color: '#fff' }}>🕵️ จับโกหกคนวงใน (Insider)</option>
-                    <option value="undercover" style={{ background: '#221913', color: '#fff' }}>🕵️‍♂️ สายลับประลองรหัสลับ (Undercover)</option>
-                    <option value="boss" style={{ background: '#221913', color: '#fff' }}>💼 อย่าซ่ากับบอส (I'm the Boss!)</option>
+                    <option value="poker" style={{ background: '#ffffff', color: 'var(--text-primary)' }}>♣️ เท็กซัส โฮลเด็ม โป๊กเกอร์ (Texas Hold'em)</option>
+                    <option value="checkers" style={{ background: '#ffffff', color: 'var(--text-primary)' }}>🏁 หมากฮอสไทย (Thai Checkers)</option>
+                    <option value="coup" style={{ background: '#ffffff', color: 'var(--text-primary)' }}>👑 โค่นอำนาจ (Coup - Social Deduction)</option>
+                    <option value="uno" style={{ background: '#ffffff', color: 'var(--text-primary)' }}>🎴 อูโน่ ไร้ความปรานี (UNO No Mercy)</option>
+                    <option value="bang" style={{ background: '#ffffff', color: 'var(--text-primary)' }}>🤠 นายอำเภอดวลปืน (BANG! Cowboy)</option>
+                    <option value="insider" style={{ background: '#ffffff', color: 'var(--text-primary)' }}>🕵️ จับโกหกคนวงใน (Insider)</option>
+                    <option value="undercover" style={{ background: '#ffffff', color: 'var(--text-primary)' }}>🕵️‍♂️ สายลับประลองรหัสลับ (Undercover)</option>
+                    <option value="boss" style={{ background: '#ffffff', color: 'var(--text-primary)' }}>💼 อย่าซ่ากับบอส (I'm the Boss!)</option>
                   </select>
                 </div>
 
