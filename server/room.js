@@ -39,6 +39,7 @@ export class Room {
     this.handCount = 0;
     this.activePlayerIdsThisHand = [];
     this.lastAction = null; // { name, action, amount } for display
+    this.gameType = 'poker';
   }
 
   addMessage(sender, text) {
@@ -589,6 +590,7 @@ export class Room {
   getClientState(playerId) {
     return {
       id: this.id,
+      gameType: this.gameType,
       gameState: this.gameState,
       communityCards: this.communityCards,
       pot: this.pot,
