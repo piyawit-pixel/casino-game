@@ -298,9 +298,15 @@ export class UndercoverRoom {
       else p.word = '???'; // Mr White has no word
     });
 
-    // 3. Find first player index
-    const living = this.players.filter(p => !p.spectating && !p.isDead);
-    this.turnIndex = this.players.findIndex(p => p.id === living[0].id);
+    // 3. Find first player index (must not be Mr. White, as he doesn't know the word!)
+    const candidates = this.players.filter(p => !p.spectating && !p.isDead && p.role !== 'white');
+    if (candidates.length > 0) {
+      const starter = candidates[Math.floor(Math.random() * candidates.length)];
+      this.turnIndex = this.players.findIndex(p => p.id === starter.id);
+    } else {
+      const living = this.players.filter(p => !p.spectating && !p.isDead);
+      this.turnIndex = this.players.findIndex(p => p.id === living[0].id);
+    }
 
     this.lastEvent = `เริ่มเกม! คำใบ้วนแรก ตาของ ${this.players[this.turnIndex].name}`;
     this.addMessage('System', this.lastEvent);
