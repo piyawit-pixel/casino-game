@@ -1763,6 +1763,132 @@
   box-shadow: 0 0 10px rgba(46, 213, 115, 0.4);
 }
 
+/* I'm the Boss! Game Styling */
+.boss-table {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, #5b3524 0%, #20100a 100%); /* Executive Boardroom wood table */
+  border: 15px solid #140a06;
+  outline: 4px solid #b87333; /* Copper rim */
+  border-radius: 500px;
+  box-shadow: inset 0 20px 50px rgba(0,0,0,0.9), 0 25px 50px rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.boss-card {
+  width: 70px;
+  height: 100px;
+  border-radius: 6px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.15);
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.boss-card:hover:not(.no-hover) {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.7);
+  z-index: 10;
+}
+
+.boss-card.card-kinsman {
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  border-color: #2ecc71;
+}
+
+.boss-card.card-travel {
+  background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+  border-color: #e67e22;
+}
+
+.boss-card.card-stop {
+  background: linear-gradient(135deg, #c0392b 0%, #962d22 100%);
+  border-color: #e74c3c;
+}
+
+.boss-card.card-boss_card {
+  background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+  border-color: #ffd700;
+  color: #000;
+  text-shadow: none;
+}
+
+.boss-card.card-hidden {
+  background: linear-gradient(135deg, #222 0%, #111 100%);
+  border-color: #444;
+}
+
+.boss-card.card-hidden::after {
+  content: '💼';
+  font-size: 1.6rem;
+  opacity: 0.6;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.boss-investor-badge {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #000;
+  background: #ffd700;
+  border-radius: 4px;
+  padding: 1px 4px;
+  text-align: center;
+  border: 1px solid rgba(0,0,0,0.2);
+}
+
+.boss-investors-list {
+  display: flex;
+  gap: 3px;
+  margin-top: 4px;
+  justify-content: center;
+}
+
+.boss-investor-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  font-size: 0.55rem;
+  font-weight: 800;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0,0,0,0.15);
+}
+
+.boss-investor-dot.investor-A { background: #ff4d4d; }
+.boss-investor-dot.investor-B { background: #33cc33; }
+.boss-investor-dot.investor-C { background: #3399ff; }
+.boss-investor-dot.investor-D { background: #ffcc00; }
+.boss-investor-dot.investor-E { background: #ff99ff; }
+.boss-investor-dot.investor-F { background: #00ffff; }
+
+.boss-investor-dot.travel-blocked {
+  background: #333 !important;
+  color: #888 !important;
+  text-decoration: line-through;
+  opacity: 0.4;
+}
+
+
 
 
 

@@ -143,6 +143,28 @@ function BangCard({ type, color, onClick, isSelectable = true }) {
   );
 }
 
+function BossCard({ type, value, onClick, isSelectable = true }) {
+  const isHidden = type === 'hidden';
+  const colorClass = isHidden ? 'card-hidden' : `card-${type}`;
+  
+  const displayType = {
+    'kinsman': `👨‍👩‍👧 ลูกหลาน ${value || ''}`,
+    'travel': `✈️ ส่งไปเที่ยว ${value || ''}`,
+    'stop': '🛑 STOP ขัดขวาง',
+    'boss_card': '👑 อย่าซ่าบอส'
+  }[type] || type;
+
+  return (
+    <div 
+      className={`boss-card ${colorClass} ${onClick && isSelectable ? '' : 'no-hover'}`}
+      onClick={isSelectable ? onClick : undefined}
+    >
+      <span style={{ fontSize: '0.6rem', textAlign: 'center' }}>{displayType}</span>
+      {!isHidden && <span style={{ fontSize: '0.45rem', opacity: 0.7, alignSelf: 'center', marginTop: 'auto' }}>{type === 'kinsman' ? 'หุ้นส่วนร่วม' : type === 'travel' ? 'ขัดขวางเดินทาง' : 'เล่นโต้กลับ'}</span>}
+    </div>
+  );
+}
+
 function App() {
   const [socket, setSocket] = useState(null);
   const [roomIdInput, setRoomIdInput] = useState('');
@@ -160,6 +182,7 @@ function App() {
   const [insiderGuessInput, setInsiderGuessInput] = useState('');
   const [undercoverDescInput, setUndercoverDescInput] = useState('');
   const [undercoverWhiteGuessInput, setUndercoverWhiteGuessInput] = useState('');
+  const [bossProposedShares, setBossProposedShares] = useState({});
   
   const chatEndRef = useRef(null);
   const socketRef = useRef(null);
@@ -672,6 +695,7 @@ function App() {
                 <option value="bang" style={{ background: '#221913', color: '#fff' }}>🤠 นายอำเภอดวลปืน (BANG! Cowboy)</option>
                 <option value="insider" style={{ background: '#221913', color: '#fff' }}>🕵️ จับโกหกคนวงใน (Insider)</option>
                 <option value="undercover" style={{ background: '#221913', color: '#fff' }}>🕵️‍♂️ สายลับประลองรหัสลับ (Undercover)</option>
+                <option value="boss" style={{ background: '#221913', color: '#fff' }}>💼 อย่าซ่ากับบอส (I'm the Boss!)</option>
               </select>
             </div>
             
@@ -1236,6 +1260,292 @@ function App() {
                 </div>
               </div>
             )}
+          </>
+        ) : roomState.gameType === 'boss' ? (
+          <>
+            {/* The Boss Table container */}
+            <div className="poker-table-container">
+              <div className="boss-table">
+                
+                {/* Event banner */}
+                {roomState.lastEvent && (
+                  <div className="last-action-indicator" style={{ top: '8%', fontSize: '0.85rem' }}>
+                    📢 {roomState.lastEvent}
+                  </div>
+                )}
+
+                {/* Center Deal Info Card */}
+                <div className="coup-center-prompt glass" style={{ width: '330px', padding: '14px' }}>
+                  <span className="coup-prompt-title">💼 {roomState.currentDeal?.name}</span>
+                  
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '4px 0' }}>
+                    มูลค่าดีล: <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{roomState.currentDeal?.shares} หุ้น</span> 
+                    (เทิร์นดีลที่ {roomState.boardIndex + 1}/10)
+                  </div>
+
+                  {/* Required Investors */}
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ต้องการหุ้นส่วน:</span>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {roomState.currentDeal?.needs.map(letter => {
+                        const isKinsmanPresent = roomState.activeKinsmen.includes(letter);
+                        const isBlocked = roomState.activeTravels.includes(letter);
+                        
+                        let dotClass = `boss-investor-dot investor-${letter}`;
+                        if (isBlocked) dotClass += ' travel-blocked';
+                        
+                        return (
+                          <div key={letter} className={dotClass} style={{ position: 'relative' }}>
+                            {letter}
+                            {isKinsmanPresent && !isBlocked && (
+                              <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', fontSize: '0.5rem' }}>👶</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Active Travels or Kinsmen logs */}
+                  {(roomState.activeKinsmen.length > 0 || roomState.activeTravels.length > 0) && (
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '2px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px' }}>
+                      {roomState.activeKinsmen.length > 0 && <span>👶 เล่นลูกหลานแทนแล้ว: {roomState.activeKinsmen.join(', ')}</span>}
+                      {roomState.activeTravels.length > 0 && <span style={{ color: '#ff4757' }}>✈️ ส่งไปเที่ยว/ระงับสิทธิ์: {roomState.activeTravels.join(', ')}</span>}
+                    </div>
+                  )}
+
+                  {/* Countdown Reaction Alert */}
+                  {roomState.gameState === 'INTERRUPTED' && roomState.pendingAction && (
+                    <div style={{ background: 'rgba(255, 71, 87, 0.15)', border: '1px solid rgba(255, 71, 87, 0.3)', borderRadius: '8px', padding: '8px', marginTop: '10px' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 'bold' }}>
+                        ⏳ เวลาต่อต้านโต้กลับ: {roomState.pendingAction.timerSeconds} วินาที!
+                      </div>
+                      <div style={{ fontSize: '0.7rem', marginTop: '2px' }}>
+                        <b>{roomState.pendingAction.initiatorName}</b> เล่นการ์ด{' '}
+                        <span style={{ color: 'var(--primary)' }}>
+                          {roomState.pendingAction.cardType === 'boss_card' ? 'แย่งบอส' : `ส่งตระกูล ${roomState.pendingAction.targetLetter} ไปเที่ยว`}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        (คุณสามารถโยนการ์ด **STOP ขัดขวาง** เพื่อยกเลิกดีลนี้ได้!)
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Share divisions overview */}
+                  {roomState.gameState === 'PLAYING' && (
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px', marginTop: '6px', textAlign: 'left' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--primary)' }}>💰 ข้อเสนอส่วนแบ่งปัจจุบัน:</span>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '0.7rem', marginTop: '2px' }}>
+                        {roomState.players.map(p => {
+                          if (p.spectating) return null;
+                          const shares = roomState.proposedShares[p.id] || 0;
+                          return (
+                            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', paddingRight: '6px' }}>
+                              <span>• {p.name}:</span>
+                              <span style={{ color: shares > 0 ? '#2ed573' : '#aaa', fontWeight: 'bold' }}>{shares} หุ้น</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {roomState.gameState === 'GAME_OVER' && (
+                    <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--primary)', marginTop: '6px' }}>
+                      🏆 การทำดีลจบลงแล้ว! ตรวจสอบเงินบัญชีผู้ชนะ
+                    </div>
+                  )}
+                </div>
+
+                {/* Circular Players */}
+                {playerNodes.map(({ player, x, y }) => {
+                  const isMyNode = player.id === socket.id;
+                  const isTurn = roomState.players[roomState.turnIndex]?.id === player.id;
+                  const isNegotiationBoss = roomState.bossPlayerId === player.id;
+
+                  return (
+                    <div 
+                      key={player.id}
+                      className={`player-node ${isTurn ? 'is-turn' : ''} ${player.spectating ? 'folded' : ''}`}
+                      style={{ left: `${x}%`, top: `${y}%` }}
+                    >
+                      {/* Boss Badge */}
+                      {isNegotiationBoss && (
+                        <div className="bang-role-badge role-sheriff">
+                          บอสเจรจา 👑
+                        </div>
+                      )}
+
+                      {/* Avatar */}
+                      <div className="player-avatar-wrapper">
+                        <div className="player-avatar">
+                          {player.name.substring(0, 2).toUpperCase()}
+                        </div>
+                      </div>
+
+                      {/* Player Info Card */}
+                      <div className="player-info-card">
+                        <div className="player-name">
+                          {player.name} {isMyNode && '(คุณ)'}
+                        </div>
+                        <div className="player-chips" style={{ fontSize: '0.75rem', color: '#2ed573', fontWeight: 'bold' }}>
+                          ${(player.money / 1000000).toFixed(1)}M
+                        </div>
+                      </div>
+
+                      {/* Permanent Investors Badges */}
+                      {!player.spectating && player.permanentInvestors && player.permanentInvestors.length > 0 && (
+                        <div className="boss-investors-list">
+                          {player.permanentInvestors.map(letter => {
+                            const isBlocked = roomState.activeTravels.includes(letter);
+                            return (
+                              <span key={letter} className={`boss-investor-dot investor-${letter} ${isBlocked ? 'travel-blocked' : ''}`}>
+                                {letter}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Active player hand panel (Bottom) */}
+            <div className="uno-hand-wrapper">
+              <div className="uno-hand-scroll">
+                {myPlayer && !myPlayer.spectating && myPlayer.hand && myPlayer.hand.map((c) => {
+                  const isInterrupted = roomState.gameState === 'INTERRUPTED';
+                  
+                  // Card playable checks:
+                  // 🛑 Stop cards are only playable during interruption state
+                  // 👑 Boss/Kinsman/Travel cards are only playable during normal playing state
+                  let isPlayable = false;
+                  if (isInterrupted) {
+                    isPlayable = c.type === 'stop';
+                  } else if (roomState.gameState === 'PLAYING') {
+                    isPlayable = c.type === 'kinsman' || c.type === 'travel' || (c.type === 'boss_card' && roomState.bossPlayerId !== socket.id);
+                  }
+
+                  const handleCardClick = () => {
+                    if (c.type === 'travel') {
+                      // Prompts target letter selection
+                      const target = prompt(`ระบุรหัสหุ้นส่วนที่ต้องการส่งไปพักร้อน (A, B, C, D, E หรือ F):`);
+                      if (target) {
+                        const letter = target.toUpperCase();
+                        if (['A','B','C','D','E','F'].includes(letter)) {
+                          socket.emit('bossPlayCard', { cardId: c.id, targetLetter: letter });
+                        } else {
+                          alert('กรุณากรอกเฉพาะอักษร A-F เท่านั้น');
+                        }
+                      }
+                    } else {
+                      socket.emit('bossPlayCard', { cardId: c.id });
+                    }
+                  };
+
+                  return (
+                    <BossCard 
+                      key={c.id} 
+                      type={c.type} 
+                      value={c.value}
+                      onClick={handleCardClick}
+                      isSelectable={isPlayable}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bottom negotiation slider & Veto buttons */}
+            <div className="action-panel-container">
+              <div className="action-bar glass" style={{ minHeight: '80px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px 24px', justifyContent: 'center', alignItems: 'center' }}>
+                {roomState.gameState === 'PLAYING' && (
+                  <>
+                    {roomState.bossPlayerId === socket.id ? (
+                      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--primary)', textAlign: 'center' }}>
+                          📊 ปรับแบ่งส่วนแบ่งเงินรางวัลดีลนี้ (รวมต้องเท่ากับ {roomState.currentDeal?.shares} หุ้น):
+                        </div>
+                        
+                        {/* Sliders for each living player */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '8px', width: '100%' }}>
+                          {roomState.players.map(p => {
+                            if (p.spectating) return null;
+                            const currentVal = bossProposedShares[p.id] !== undefined ? bossProposedShares[p.id] : (roomState.proposedShares[p.id] || 0);
+                            
+                            return (
+                              <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'rgba(0,0,0,0.2)', padding: '6px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                <span style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between' }}>
+                                  <span>{p.name}:</span>
+                                  <b style={{ color: 'var(--primary)' }}>{currentVal}</b>
+                                </span>
+                                <input 
+                                  type="range"
+                                  min={0}
+                                  max={roomState.currentDeal?.shares}
+                                  step={1}
+                                  value={currentVal}
+                                  onChange={(e) => {
+                                    const nextMap = { ...bossProposedShares };
+                                    // Prepopulate others if not edited
+                                    roomState.players.forEach(oth => {
+                                      if (nextMap[oth.id] === undefined) {
+                                        nextMap[oth.id] = roomState.proposedShares[oth.id] || 0;
+                                      }
+                                    });
+                                    nextMap[p.id] = parseInt(e.target.value);
+                                    setBossProposedShares(nextMap);
+                                    socket.emit('bossSubmitProposal', { sharesMap: nextMap });
+                                  }}
+                                  style={{ width: '100%', height: '4px', cursor: 'pointer' }}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Agreement Controls */}
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '4px' }}>
+                          <button 
+                            className="btn-primary" 
+                            onClick={() => socket.emit('bossCloseDeal')}
+                            style={{ width: 'auto', padding: '8px 18px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold', cursor: 'pointer' }}
+                          >
+                            🤝 ตกลงอนุมัติทำสัญญา (Close Deal)
+                          </button>
+                          <button 
+                            className="btn-secondary" 
+                            onClick={() => socket.emit('bossCancelDeal')}
+                            style={{ width: 'auto', padding: '8px 18px', borderRadius: '8px', fontSize: '0.8rem', background: '#ff4757', border: 'none', color: '#fff', cursor: 'pointer' }}
+                          >
+                            ❌ ดีลล่ม/ผ่านสิทธิ์ (Cancel Deal)
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                        รอ <b>{roomState.players.find(p => p.id === roomState.bossPlayerId)?.name}</b> ยื่นข้อเสนอมูลค่าส่วนแบ่ง หรือ เจรจาร่วมดีล...
+                      </span>
+                    )}
+                  </>
+                )}
+
+                {roomState.gameState === 'INTERRUPTED' && (
+                  <span style={{ color: 'var(--accent)', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                    🛑 กำลังต่อสู้ขัดขวางข้อเสนอเจรจา! กดเล่นการ์ด STOP หากคุณต้องการระงับการกระทำล่าสุด
+                  </span>
+                )}
+
+                {roomState.gameState === 'GAME_OVER' && (
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    การสู้ดีลธุรกิจอย่าซ่ากับบอสสิ้นสุดลงแล้ว! หัวหน้าสามารถสับแจกตาถัดไปเริ่มใหม่ต่อได้เลย
+                  </span>
+                )}
+              </div>
+            </div>
           </>
         ) : roomState.gameType === 'undercover' ? (
           <>

@@ -11,6 +11,7 @@ import { UnoRoom } from './unoRoom.js';
 import { BangRoom } from './bangRoom.js';
 import { InsiderRoom } from './insiderRoom.js';
 import { UndercoverRoom } from './undercoverRoom.js';
+import { BossRoom } from './bossRoom.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,7 +69,7 @@ io.on('connection', (socket) => {
       return;
     }
     const roomId = generateRoomId();
-    const room = gameType === 'checkers' ? new CheckersRoom(roomId) : gameType === 'coup' ? new CoupRoom(roomId) : gameType === 'uno' ? new UnoRoom(roomId) : gameType === 'bang' ? new BangRoom(roomId) : gameType === 'insider' ? new InsiderRoom(roomId) : gameType === 'undercover' ? new UndercoverRoom(roomId) : new Room(roomId);
+    const room = gameType === 'checkers' ? new CheckersRoom(roomId) : gameType === 'coup' ? new CoupRoom(roomId) : gameType === 'uno' ? new UnoRoom(roomId) : gameType === 'bang' ? new BangRoom(roomId) : gameType === 'insider' ? new InsiderRoom(roomId) : gameType === 'undercover' ? new UndercoverRoom(roomId) : gameType === 'boss' ? new BossRoom(roomId) : new Room(roomId);
     rooms.set(roomId, room);
 
     const player = room.addPlayer(socket.id, name.trim());
@@ -477,6 +478,55 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Boss Game events
+  socket.on('bossSubmitProposal', ({ sharesMap }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'boss') return;
+    try {
+      room.submitSharesProposal(socket.id, sharesMap);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('bossPlayCard', ({ cardId, targetLetter }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'boss') return;
+    try {
+      room.playBossCard(socket.id, cardId, targetLetter);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('bossCloseDeal', () => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'boss') return;
+    try {
+      room.closeDeal(socket.id);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  socket.on('bossCancelDeal', () => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'boss') return;
+    try {
+      room.cancelDeal(socket.id);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
   // Send a chat message
   socket.on('sendMessage', (text) => {
     if (!currentRoomId || !text || text.trim() === '') return;
@@ -547,10 +597,13 @@ server.listen(PORT, () => {
   console.log(`Poker backend server running on port ${PORT}`);
 });
 
-// Global Timer Tick for Insider Game (once per second)
+// Global Timer Tick for Insider & Boss Games (once per second)
 setInterval(() => {
   rooms.forEach((room, roomId) => {
     if (room.gameType === 'insider' && room.gameState === 'PLAYING') {
+      room.tickTimer();
+      broadcastRoomState(roomId);
+    } else if (room.gameType === 'boss' && room.gameState === 'INTERRUPTED') {
       room.tickTimer();
       broadcastRoomState(roomId);
     }
