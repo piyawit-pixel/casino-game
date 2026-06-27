@@ -331,6 +331,13 @@ function App() {
     }
   };
 
+  const handleUpdateProfile = (avatar, frame) => {
+    console.log('Emitting updateProfile:', { avatar, frame });
+    if (socketRef.current) {
+      socketRef.current.emit('updateProfile', { avatar, frame });
+    }
+  };
+
   // Initialize Socket.io connection
   useEffect(() => {
     const socketUrl = import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin;
@@ -2941,7 +2948,7 @@ function App() {
                 {[null, '🦊', '🐱', '🦁', '🕵️', '🤠', '😈', '🤡', '👽', '🐼', '🤖', '💀'].map(emoji => (
                   <button 
                     key={emoji || 'default'}
-                    onClick={() => socket.emit('updateProfile', { avatar: emoji, frame: myPlayer?.frame })}
+                    onClick={() => handleUpdateProfile(emoji, myPlayer?.frame)}
                     style={{
                       background: (myPlayer?.avatar === emoji || (emoji === null && !myPlayer?.avatar)) ? 'var(--primary)' : 'rgba(0,0,0,0.04)',
                       color: (myPlayer?.avatar === emoji || (emoji === null && !myPlayer?.avatar)) ? '#fff' : 'var(--text-primary)',
@@ -2971,7 +2978,7 @@ function App() {
                 ].map(frame => (
                   <button 
                     key={frame.value}
-                    onClick={() => socket.emit('updateProfile', { avatar: myPlayer?.avatar, frame: frame.value })}
+                    onClick={() => handleUpdateProfile(myPlayer?.avatar, frame.value)}
                     style={{
                       background: (myPlayer?.frame === frame.value || (frame.value === 'default' && !myPlayer?.frame)) ? 'var(--primary)' : 'rgba(0,0,0,0.04)',
                       color: (myPlayer?.frame === frame.value || (frame.value === 'default' && !myPlayer?.frame)) ? '#fff' : 'var(--text-primary)',
