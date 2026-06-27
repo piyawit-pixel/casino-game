@@ -68,6 +68,8 @@ function App() {
   const [raiseAmount, setRaiseAmount] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
+  const [gameType, setGameType] = useState('poker'); // 'poker' or 'checkers'
+  const [selectedSquare, setSelectedSquare] = useState(null); // { row, col }
   
   const chatEndRef = useRef(null);
   const socketRef = useRef(null);
@@ -96,11 +98,13 @@ function App() {
     newSocket.on('roomState', (state) => {
       setRoomState(state);
       
-      // Auto-set the initial raise slider value when turn updates
-      const myPlayer = state.players.find(p => p.id === newSocket.id);
-      if (myPlayer && state.currentTurnIndex !== null && state.players[state.currentTurnIndex]?.id === newSocket.id) {
-        const minVal = Math.min(state.minRaise, myPlayer.chips + myPlayer.currentBet);
-        setRaiseAmount(minVal);
+      // Auto-set the initial raise slider value when turn updates (poker-only)
+      if (state.gameType !== 'checkers') {
+        const myPlayer = state.players.find(p => p.id === newSocket.id);
+        if (myPlayer && state.currentTurnIndex !== null && state.players[state.currentTurnIndex]?.id === newSocket.id) {
+          const minVal = Math.min(state.minRaise, myPlayer.chips + myPlayer.currentBet);
+          setRaiseAmount(minVal);
+        }
       }
     });
 
@@ -122,7 +126,7 @@ function App() {
   const handleCreateRoom = (e) => {
     e.preventDefault();
     if (socket && name.trim()) {
-      socket.emit('createRoom', { name });
+      socket.emit('createRoom', { name, gameType });
     } else {
       setErrorMsg('Please enter your name.');
     }
@@ -215,6 +219,38 @@ function App() {
                 maxLength={12}
                 required
               />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">เลือกเกมที่ต้องการเล่น (Select Game)</label>
+              <div className="game-type-selector">
+                <label className="game-type-option">
+                  <input 
+                    type="radio" 
+                    name="gameType" 
+                    value="poker" 
+                    checked={gameType === 'poker'}
+                    onChange={() => setGameType('poker')} 
+                  />
+                  <div className="game-type-card">
+                    <span className="game-type-icon">♣️</span>
+                    <span className="game-type-label">เท็กซัส โฮลเด็ม</span>
+                  </div>
+                </label>
+                <label className="game-type-option">
+                  <input 
+                    type="radio" 
+                    name="gameType" 
+                    value="checkers" 
+                    checked={gameType === 'checkers'}
+                    onChange={() => setGameType('checkers')} 
+                  />
+                  <div className="game-type-card">
+                    <span className="game-type-icon">🏁</span>
+                    <span className="game-type-label">หมากฮอส</span>
+                  </div>
+                </label>
+              </div>
             </div>
             
             <button id="create-room-btn" type="submit" className="btn-primary">
@@ -339,209 +375,311 @@ function App() {
           </div>
         )}
 
-        {/* Temporary toast errors */}
-        {errorMsg && (
-          <div style={{
-            position: 'absolute',
-            top: '80px',
-            background: 'rgba(255, 71, 87, 0.9)',
-            color: 'white',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            zIndex: 100,
-            fontSize: '0.9rem',
-            fontWeight: 'bold',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
-          }}>
-            ⚠️ {errorMsg}
-          </div>
-        )}
-
-        {/* The Poker Table container */}
-        <div className="poker-table-container">
-          <div className="poker-table">
-            <div className="table-center">
-              {/* Pot display */}
-              <div className="pot-display">
-                <span>POT:</span>
-                <span className="pot-amount">{roomState.pot} chips</span>
+        {roomState.gameType === 'checkers' ? (
+          <div className="checkers-board-wrapper">
+            {/* Checkers Info Bar */}
+            <div className="checkers-info-bar">
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <span style={{ color: '#ff5252' }}>
+                  🔴 แดง: {roomState.players.find(p => p.color === 'red')?.name || 'ว่าง'}
+                </span>
+                <span style={{ color: '#a0a0a0' }}>VS</span>
+                <span style={{ color: '#ffffff' }}>
+                  ⚫ ดำ: {roomState.players.find(p => p.color === 'black')?.name || 'ว่าง'}
+                </span>
               </div>
-
-              {/* Board community cards */}
-              <div className="board-cards">
-                {roomState.communityCards.map((card, idx) => (
-                  <Card key={idx} rank={card.rank} suit={card.suit} isDealt={true} />
-                ))}
-                {/* Visual placeholders for remaining cards */}
-                {Array.from({ length: 5 - roomState.communityCards.length }).map((_, idx) => (
-                  <div key={idx} className="poker-card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' }} />
-                ))}
+              
+              <div className="checkers-active-turn">
+                {roomState.gameState === 'PLAYING' && (
+                  <>
+                    <span className={`checkers-turn-dot ${roomState.turn === 'red' ? 'dot-red' : 'dot-black'}`}></span>
+                    <span>ตาของ: {roomState.turn === 'red' ? 'สีแดง' : 'สีดำ'}</span>
+                  </>
+                )}
+                {roomState.gameState === 'WAITING' && <span>รอเริ่มเกม</span>}
+                {roomState.gameState === 'GAME_OVER' && (
+                  <span style={{ color: 'var(--accent-blue)' }}>
+                    🎉 {roomState.winner === 'red' ? 'สีแดงชนะ!' : 'สีดำชนะ!'}
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Last Action display */}
-            {roomState.lastAction && (
-              <div className="last-action-indicator">
-                {roomState.lastAction.name} {roomState.lastAction.action}
-                {roomState.lastAction.amount > 0 && ` (${roomState.lastAction.amount})`}
-              </div>
-            )}
-
-            {/* Render Player Nodes */}
-            {playerNodes.map(({ player, x, y, betX, betY, isTurn, isDealer }) => (
-              <React.Fragment key={player.id}>
-                {/* Player seat bubble */}
-                <div 
-                  className={`player-node ${isTurn ? 'is-turn' : ''} ${player.folded ? 'folded' : ''} ${!player.isOnline ? 'offline' : ''}`}
-                  style={{ left: `${x}%`, top: `${y}%` }}
-                >
-                  {/* Player Hand hole cards (show if not folded and has cards) */}
-                  {player.cards && player.cards.length > 0 && (
-                    <div className="player-hand">
-                      {player.cards.map((c, cidx) => (
-                        <Card key={cidx} rank={c.rank} suit={c.suit} isDealt={true} />
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="player-avatar-wrapper">
-                    <div className="player-avatar">
-                      {player.name.substring(0, 2).toUpperCase()}
-                    </div>
-                    {isDealer && <div className="player-dealer-btn">D</div>}
-                  </div>
-
-                  <div className="player-info-card">
-                    <div className="player-name">{player.name} {player.id === socket.id && '(คุณ)'}</div>
-                    <div className="player-chips">{player.chips} 🪙</div>
-                  </div>
-
-                  {player.allIn && <div className="player-status-tag all-in">ALL-IN</div>}
-                  {player.folded && <div className="player-status-tag folded-tag">FOLDED</div>}
-                  {!player.isOnline && <div className="player-status-tag" style={{ color: '#ff4757', borderColor: '#ff4757' }}>OFFLINE</div>}
-                  {player.spectating && <div className="player-status-tag" style={{ color: 'var(--text-muted)' }}>WATCHING</div>}
-                </div>
-
-                {/* Bet Chips stack/bubble */}
-                {player.currentBet > 0 && (
-                  <div className="player-bet-bubble" style={{ left: `${betX}%`, top: `${betY}%` }}>
-                    {player.currentBet}
-                  </div>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-
-        {/* Action Panel controls (Bottom) */}
-        <div className="action-panel-container">
-          <div className="action-bar glass">
-            <div className="action-buttons">
-              <button 
-                id="action-fold-btn"
-                className="action-btn fold-btn" 
-                disabled={!isMyTurn || myPlayer?.folded || myPlayer?.spectating}
-                onClick={() => handleAction('FOLD')}
-              >
-                FOLD (หมอบ)
-              </button>
-
-              {canCheck ? (
-                <button 
-                  id="action-check-btn"
-                  className="action-btn check-btn" 
-                  disabled={!isMyTurn || myPlayer?.spectating}
-                  onClick={() => handleAction('CHECK')}
-                >
-                  CHECK (ผ่าน)
-                </button>
-              ) : (
-                <button 
-                  id="action-call-btn"
-                  className="action-btn call-btn" 
-                  disabled={!isMyTurn || !canCall || myPlayer?.spectating}
-                  onClick={() => handleAction('CALL')}
-                >
-                  CALL {callAmountNeeded > 0 ? callAmountNeeded : ''} (สู้)
-                </button>
-              )}
-
-              <button 
-                id="action-raise-btn"
-                className="action-btn raise-btn" 
-                disabled={!isMyTurn || !canRaise || myPlayer?.spectating}
-                onClick={() => handleAction('RAISE', raiseAmount)}
-              >
-                {roomState.currentBetSize === 0 ? 'BET' : 'RAISE TO'} {raiseAmount}
-              </button>
-
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                {isMyTurn ? (
-                  <span style={{ color: 'var(--accent-blue)', fontWeight: 'bold' }}>ตาของคุณแล้ว!</span>
-                ) : (
-                  <span>รอตาถัดไป...</span>
-                )}
-                {myPlayer && <span>ชิปของคุณ: <b style={{ color: '#fff' }}>{myPlayer.chips}</b></span>}
-              </div>
-            </div>
-
-            {/* Slider controls for raising */}
-            {canRaise && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                <div className="raise-slider-group">
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>MIN: {minTotalBet}</span>
-                  <input 
-                    id="raise-range-slider"
-                    type="range" 
-                    className="raise-slider" 
-                    min={minTotalBet} 
-                    max={maxTotalBet} 
-                    step={1}
-                    value={raiseAmount} 
-                    onChange={(e) => setRaiseAmount(parseInt(e.target.value))}
-                  />
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>MAX: {maxTotalBet}</span>
+            {/* Checkers Board Grid */}
+            <div className="checkers-board">
+              {[7, 6, 5, 4, 3, 2, 1, 0].map(r => (
+                [0, 1, 2, 3, 4, 5, 6, 7].map(c => {
+                  const piece = roomState.board[r][c];
+                  const isDarkSquare = (r + c) % 2 === 1;
+                  const isSelected = selectedSquare && selectedSquare.row === r && selectedSquare.col === c;
                   
-                  <div className="raise-input-wrapper">
-                    <input 
-                      id="raise-number-input"
-                      type="number" 
-                      className="raise-input" 
-                      value={raiseAmount} 
-                      min={minTotalBet} 
-                      max={maxTotalBet}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        if (!isNaN(val)) {
-                          setRaiseAmount(Math.max(minTotalBet, Math.min(maxTotalBet, val)));
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
+                  // Filter valid moves
+                  const activeMovesForSelectedPiece = selectedSquare
+                    ? (roomState.validMoves || []).filter(m => m.from.row === selectedSquare.row && m.from.col === selectedSquare.col)
+                    : [];
+                  
+                  const isDest = activeMovesForSelectedPiece.some(m => m.to.row === r && m.to.col === c);
+                  
+                  const isLastMoveSquare = roomState.lastMove && (
+                    (roomState.lastMove.from.row === r && roomState.lastMove.from.col === c) ||
+                    (roomState.lastMove.to.row === r && roomState.lastMove.to.col === c)
+                  );
 
-                {/* Quick Bet Options */}
-                <div className="quick-bet-buttons">
-                  {roomState.currentBetSize === 0 ? (
-                    <>
-                      <button className="quick-bet-btn" onClick={() => handleQuickBet(0.5)}>1/2 Pot</button>
-                      <button className="quick-bet-btn" onClick={() => handleQuickBet(0.75)}>3/4 Pot</button>
-                      <button className="quick-bet-btn" onClick={() => handleQuickBet(1)}>Pot</button>
-                      <button className="quick-bet-btn" onClick={() => handleQuickBet(100)}>All-In</button>
-                    </>
-                  ) : (
-                    <>
-                      <button className="quick-bet-btn" onClick={() => handleQuickBet(2)}>2x Bet</button>
-                      <button className="quick-bet-btn" onClick={() => handleQuickBet(3)}>3x Bet</button>
-                      <button className="quick-bet-btn" onClick={() => handleQuickBet(4)}>4x Bet</button>
-                      <button className="quick-bet-btn" onClick={() => handleQuickBet(100)}>All-In</button>
-                    </>
-                  )}
-                </div>
+                  let squareClass = `checkers-square ${isDarkSquare ? 'square-dark' : 'square-light'}`;
+                  if (isDest) squareClass += ' square-highlight';
+                  else if (isLastMoveSquare) squareClass += ' square-last-move';
+
+                  const handleSquareClick = () => {
+                    if (roomState.gameState !== 'PLAYING') return;
+
+                    // If clicking a highlighted destination, make the move
+                    if (isDest) {
+                      socket.emit('makeMove', { from: selectedSquare, to: { row: r, col: c } });
+                      setSelectedSquare(null);
+                      return;
+                    }
+
+                    // Otherwise check if clicking own piece to select
+                    if (piece && piece.color === myPlayer?.color) {
+                      const hasMoves = (roomState.validMoves || []).some(m => m.from.row === r && m.from.col === c);
+                      if (hasMoves) {
+                        setSelectedSquare({ row: r, col: c });
+                      } else {
+                        setSelectedSquare(null);
+                      }
+                    } else {
+                      setSelectedSquare(null);
+                    }
+                  };
+
+                  return (
+                    <div 
+                      key={`${r}-${c}`} 
+                      className={squareClass}
+                      onClick={handleSquareClick}
+                    >
+                      {/* Render Piece */}
+                      {piece && (
+                        <div className={`checkers-piece ${piece.color === 'red' ? 'piece-red' : 'piece-black'} ${piece.type === 'king' ? 'piece-king' : ''} ${isSelected ? 'piece-selected' : ''}`} />
+                      )}
+                    </div>
+                  );
+                })
+              ))}
+            </div>
+
+            {/* Checkers Game Over / Lobby buttons */}
+            {roomState.gameState === 'GAME_OVER' && (
+              <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                <h3 style={{ color: 'var(--primary)', marginBottom: '8px' }}>เกมจบลงแล้ว!</h3>
+                {isHost && (
+                  <button className="host-btn" onClick={handleStartGame}>
+                    เริ่มใหม่ (Play Again)
+                  </button>
+                )}
+              </div>
+            )}
+            
+            {roomState.gameState === 'WAITING' && (
+              <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                <h3 style={{ color: 'var(--text-muted)' }}>รอคู่แข่งเตรียมตัว...</h3>
+                {isHost && (
+                  <button id="start-game-btn" className="host-btn" style={{ marginTop: '12px' }} onClick={handleStartGame}>
+                    เริ่มบอร์ดเกม (Start Game)
+                  </button>
+                )}
               </div>
             )}
           </div>
-        </div>
+        ) : (
+          <>
+            {/* The Poker Table container */}
+            <div className="poker-table-container">
+              <div className="poker-table">
+                <div className="table-center">
+                  {/* Pot display */}
+                  <div className="pot-display">
+                    <span>POT:</span>
+                    <span className="pot-amount">{roomState.pot} chips</span>
+                  </div>
+
+                  {/* Board community cards */}
+                  <div className="board-cards">
+                    {roomState.communityCards.map((card, idx) => (
+                      <Card key={idx} rank={card.rank} suit={card.suit} isDealt={true} />
+                    ))}
+                    {/* Visual placeholders for remaining cards */}
+                    {Array.from({ length: 5 - roomState.communityCards.length }).map((_, idx) => (
+                      <div key={idx} className="poker-card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' }} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Last Action display */}
+                {roomState.lastAction && (
+                  <div className="last-action-indicator">
+                    {roomState.lastAction.name} {roomState.lastAction.action}
+                    {roomState.lastAction.amount > 0 && ` (${roomState.lastAction.amount})`}
+                  </div>
+                )}
+
+                {/* Render Player Nodes */}
+                {playerNodes.map(({ player, x, y, betX, betY, isTurn, isDealer }) => (
+                  <React.Fragment key={player.id}>
+                    {/* Player seat bubble */}
+                    <div 
+                      className={`player-node ${isTurn ? 'is-turn' : ''} ${player.folded ? 'folded' : ''} ${!player.isOnline ? 'offline' : ''}`}
+                      style={{ left: `${x}%`, top: `${y}%` }}
+                    >
+                      {/* Player Hand hole cards (show if not folded and has cards) */}
+                      {player.cards && player.cards.length > 0 && (
+                        <div className="player-hand">
+                          {player.cards.map((c, cidx) => (
+                            <Card key={cidx} rank={c.rank} suit={c.suit} isDealt={true} />
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="player-avatar-wrapper">
+                        <div className="player-avatar">
+                          {player.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        {isDealer && <div className="player-dealer-btn">D</div>}
+                      </div>
+
+                      <div className="player-info-card">
+                        <div className="player-name">{player.name} {player.id === socket.id && '(คุณ)'}</div>
+                        <div className="player-chips">{player.chips} 🪙</div>
+                      </div>
+
+                      {player.allIn && <div className="player-status-tag all-in">ALL-IN</div>}
+                      {player.folded && <div className="player-status-tag folded-tag">FOLDED</div>}
+                      {!player.isOnline && <div className="player-status-tag" style={{ color: '#ff4757', borderColor: '#ff4757' }}>OFFLINE</div>}
+                      {player.spectating && <div className="player-status-tag" style={{ color: 'var(--text-muted)' }}>WATCHING</div>}
+                    </div>
+
+                    {/* Bet Chips stack/bubble */}
+                    {player.currentBet > 0 && (
+                      <div className="player-bet-bubble" style={{ left: `${betX}%`, top: `${betY}%` }}>
+                        {player.currentBet}
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Panel controls (Bottom) */}
+            <div className="action-panel-container">
+              <div className="action-bar glass">
+                <div className="action-buttons">
+                  <button 
+                    id="action-fold-btn"
+                    className="action-btn fold-btn" 
+                    disabled={!isMyTurn || myPlayer?.folded || myPlayer?.spectating}
+                    onClick={() => handleAction('FOLD')}
+                  >
+                    FOLD (หมอบ)
+                  </button>
+
+                  {canCheck ? (
+                    <button 
+                      id="action-check-btn"
+                      className="action-btn check-btn" 
+                      disabled={!isMyTurn || myPlayer?.spectating}
+                      onClick={() => handleAction('CHECK')}
+                    >
+                      CHECK (ผ่าน)
+                    </button>
+                  ) : (
+                    <button 
+                      id="action-call-btn"
+                      className="action-btn call-btn" 
+                      disabled={!isMyTurn || !canCall || myPlayer?.spectating}
+                      onClick={() => handleAction('CALL')}
+                    >
+                      CALL {callAmountNeeded > 0 ? callAmountNeeded : ''} (สู้)
+                    </button>
+                  )}
+
+                  <button 
+                    id="action-raise-btn"
+                    className="action-btn raise-btn" 
+                    disabled={!isMyTurn || !canRaise || myPlayer?.spectating}
+                    onClick={() => handleAction('RAISE', raiseAmount)}
+                  >
+                    {roomState.currentBetSize === 0 ? 'BET' : 'RAISE TO'} {raiseAmount}
+                  </button>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    {isMyTurn ? (
+                      <span style={{ color: 'var(--accent-blue)', fontWeight: 'bold' }}>ตาของคุณแล้ว!</span>
+                    ) : (
+                      <span>รอตาถัดไป...</span>
+                    )}
+                    {myPlayer && <span>ชิปของคุณ: <b style={{ color: '#fff' }}>{myPlayer.chips}</b></span>}
+                  </div>
+                </div>
+
+                {/* Slider controls for raising */}
+                {canRaise && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                    <div className="raise-slider-group">
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>MIN: {minTotalBet}</span>
+                      <input 
+                        id="raise-range-slider"
+                        type="range" 
+                        className="raise-slider" 
+                        min={minTotalBet} 
+                        max={maxTotalBet} 
+                        step={1}
+                        value={raiseAmount} 
+                        onChange={(e) => setRaiseAmount(parseInt(e.target.value))}
+                      />
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>MAX: {maxTotalBet}</span>
+                      
+                      <div className="raise-input-wrapper">
+                        <input 
+                          id="raise-number-input"
+                          type="number" 
+                          className="raise-input" 
+                          value={raiseAmount} 
+                          min={minTotalBet} 
+                          max={maxTotalBet}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            if (!isNaN(val)) {
+                              setRaiseAmount(Math.max(minTotalBet, Math.min(maxTotalBet, val)));
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Quick Bet Options */}
+                    <div className="quick-bet-buttons">
+                      {roomState.currentBetSize === 0 ? (
+                        <>
+                          <button className="quick-bet-btn" onClick={() => handleQuickBet(0.5)}>1/2 Pot</button>
+                          <button className="quick-bet-btn" onClick={() => handleQuickBet(0.75)}>3/4 Pot</button>
+                          <button className="quick-bet-btn" onClick={() => handleQuickBet(1)}>Pot</button>
+                          <button className="quick-bet-btn" onClick={() => handleQuickBet(100)}>All-In</button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="quick-bet-btn" onClick={() => handleQuickBet(2)}>2x Bet</button>
+                          <button className="quick-bet-btn" onClick={() => handleQuickBet(3)}>3x Bet</button>
+                          <button className="quick-bet-btn" onClick={() => handleQuickBet(4)}>4x Bet</button>
+                          <button className="quick-bet-btn" onClick={() => handleQuickBet(100)}>All-In</button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Chat Sidebar Area (Right Side) */}

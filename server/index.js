@@ -5,6 +5,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Room } from './room.js';
+import { CheckersRoom } from './checkersRoom.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,13 +57,13 @@ io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`);
 
   // Create a new room
-  socket.on('createRoom', ({ name }) => {
+  socket.on('createRoom', ({ name, gameType }) => {
     if (!name || name.trim() === '') {
       socket.emit('errorMsg', 'Please enter a valid name.');
       return;
     }
     const roomId = generateRoomId();
-    const room = new Room(roomId);
+    const room = gameType === 'checkers' ? new CheckersRoom(roomId) : new Room(roomId);
     rooms.set(roomId, room);
 
     const player = room.addPlayer(socket.id, name.trim());
@@ -158,6 +159,20 @@ io.on('connection', (socket) => {
 
     try {
       room.processAction(socket.id, action, amount);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  // Process a checkers board move
+  socket.on('makeMove', ({ from, to }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameType !== 'checkers') return;
+
+    try {
+      room.makeMove(socket.id, from, to);
       broadcastRoomState(currentRoomId);
     } catch (err) {
       socket.emit('errorMsg', err.message);

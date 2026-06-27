@@ -834,3 +834,181 @@
   border-radius: 8px;
   z-index: 10;
 }
+
+/* Checkers Board Styles */
+.checkers-board-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 500px;
+  aspect-ratio: 1 / 1;
+}
+
+.checkers-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  width: 100%;
+  height: 100%;
+  border: 12px solid #2c1e18; /* Wooden border */
+  outline: 4px solid var(--table-border);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.checkers-square {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.square-light {
+  background-color: #efebe9; /* Cream color */
+}
+
+.square-dark {
+  background-color: #4e342e; /* Deep wood brown */
+}
+
+.square-highlight {
+  box-shadow: inset 0 0 0 4px #2ed573; /* Green border glow */
+  background-color: rgba(46, 213, 115, 0.2) !important;
+}
+
+.square-last-move {
+  background-color: rgba(255, 215, 0, 0.15) !important;
+}
+
+/* Checkers Piece Styles */
+.checkers-piece {
+  position: relative;
+  width: 76%;
+  height: 76%;
+  border-radius: 50%;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.checkers-piece:hover {
+  transform: scale(1.05);
+}
+
+.checkers-piece.piece-selected {
+  transform: scale(1.08);
+  box-shadow: 0 0 20px #ffd700, inset 0 2px 4px rgba(255,255,255,0.4);
+  outline: 3px solid #ffd700;
+}
+
+.piece-red {
+  background: radial-gradient(circle at 30% 30%, #ff5252 0%, #b71c1c 100%);
+  border: 2px solid #b71c1c;
+}
+
+.piece-black {
+  background: radial-gradient(circle at 30% 30%, #757575 0%, #212121 100%);
+  border: 2px solid #000000;
+}
+
+.piece-king::after {
+  content: '👑';
+  font-size: 1.25rem;
+  color: #ffd700;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  animation: float 2.5s ease-in-out infinite;
+}
+
+/* Checkers Status Info */
+.checkers-info-bar {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 20px;
+  background: rgba(10, 13, 20, 0.6);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.checkers-active-turn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkers-turn-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.checkers-turn-dot.dot-red {
+  background: #ff5252;
+  box-shadow: 0 0 10px #ff5252;
+}
+
+.checkers-turn-dot.dot-black {
+  background: #212121;
+  border: 1px solid #757575;
+  box-shadow: 0 0 10px #212121;
+}
+
+/* Radio buttons group in lobby for gameType selection */
+.game-type-selector {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+
+.game-type-option {
+  flex: 1;
+  position: relative;
+  cursor: pointer;
+}
+
+.game-type-option input {
+  display: none;
+}
+
+.game-type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 10px;
+  background: rgba(10, 13, 20, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.game-type-option input:checked + .game-type-card {
+  border-color: var(--primary);
+  background: rgba(255, 215, 0, 0.05);
+  box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.1);
+}
+
+.game-type-icon {
+  font-size: 1.5rem;
+}
+
+.game-type-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
