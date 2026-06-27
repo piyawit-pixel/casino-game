@@ -5,10 +5,10 @@
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* Colors */
-  --bg-app: radial-gradient(circle at 50% 50%, #221912 0%, #0d0a08 100%); /* Rich Mahogany / Warm Walnut felt */
-  --table-felt: radial-gradient(circle, #2a3c30 0%, #17241c 100%); /* Premium Emerald Dark Felt */
-  --table-border: #d4a373; /* Antique Bronze Gold */
-  --table-rim: #2d1c10; /* Dark Walnut Wood Rim */
+  --bg-app: radial-gradient(circle at 50% 50%, #50392b 0%, #1c140f 100%); /* Brighter Warm Chestnut/Oak tabletop */
+  --table-felt: radial-gradient(circle, #3d5a47 0%, #223628 100%); /* Brighter Emerald Felt */
+  --table-border: #e6b88a; /* Brighter Antique Bronze Gold */
+  --table-rim: #3e2819; /* Warm Oak Wood Rim */
   
   --primary: #ffb703; /* Warm Amber Gold */
   --primary-hover: #ffca3a;
@@ -16,11 +16,11 @@
   --accent-blue: #2ed573; /* Neon Green */
   --accent-cyan: #2196f3; /* Neon Blue */
   
-  --bg-card: rgba(38, 28, 20, 0.45); /* Warm Wood-tinted Glass */
-  --bg-card-solid: #221913;
-  --border-card: rgba(255, 183, 3, 0.15); /* Warm copper border glow */
-  --text-primary: #faf8f5; /* Warm Off-white */
-  --text-muted: #a69c91; /* Soft sand beige */
+  --bg-card: rgba(74, 57, 44, 0.65); /* Brighter warm amber glass */
+  --bg-card-solid: #3d2d22;
+  --border-card: rgba(255, 183, 3, 0.3); /* Glowing warm bronze border */
+  --text-primary: #ffffff; /* Crisp white */
+  --text-muted: #cfc7be; /* Bright warm sand/beige */
   
   --shadow-glow: 0 0 15px rgba(255, 183, 3, 0.25);
   --shadow-active: 0 0 20px rgba(46, 213, 115, 0.45);
@@ -55,10 +55,10 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Glassmorphism utility */
 .glass {
-  background: rgba(30, 37, 48, 0.55);
+  background: var(--bg-card);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border-card);
   border-radius: 16px;
   box-shadow: var(--shadow-card);
 }
