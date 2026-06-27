@@ -1041,11 +1041,11 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, #252a34 0%, #15181f 100%); /* Cyberpunk charcoal table */
-  border: 15px solid #1f232b;
-  outline: 4px solid var(--primary); /* Gold border */
+  background: radial-gradient(circle, #74b9ff 0%, #0984e3 100%); /* Bright cyberpunk blue felt */
+  border: 15px solid #2f3640;
+  outline: 4px solid var(--table-border);
   border-radius: 500px;
-  box-shadow: inset 0 20px 50px rgba(0,0,0,0.9), 0 25px 50px rgba(0,0,0,0.7);
+  box-shadow: inset 0 20px 50px rgba(0,0,0,0.25), 0 25px 50px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1316,11 +1316,11 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, #1a1f29 0%, #0d0f14 100%);
-  border: 15px solid #14171f;
-  outline: 4px solid #333;
+  background: radial-gradient(circle, #00cec9 0%, #0097e6 100%); /* Bright UNO teal/blue felt */
+  border: 15px solid #353b48;
+  outline: 4px solid var(--table-border);
   border-radius: 500px;
-  box-shadow: inset 0 20px 50px rgba(0,0,0,0.9), 0 25px 50px rgba(0,0,0,0.7);
+  box-shadow: inset 0 20px 50px rgba(0,0,0,0.25), 0 25px 50px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1535,11 +1535,11 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, #5c4431 0%, #2b1f15 100%); /* Dusty desert felt */
-  border: 15px solid #231810;
-  outline: 4px solid #8c6a46; /* Sandstone rim */
+  background: radial-gradient(circle, #f5cd79 0%, #e67e22 100%); /* Bright sandstone/desert felt */
+  border: 15px solid #574b90;
+  outline: 4px solid var(--table-border);
   border-radius: 500px;
-  box-shadow: inset 0 20px 50px rgba(0,0,0,0.9), 0 25px 50px rgba(0,0,0,0.7);
+  box-shadow: inset 0 20px 50px rgba(0,0,0,0.25), 0 25px 50px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1688,11 +1688,11 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, #3d2f47 0%, #150f1a 100%); /* Cozy mystery purple felt */
-  border: 15px solid #231d28;
-  outline: 4px solid #7d5b94;
+  background: radial-gradient(circle, #a29bfe 0%, #6c5ce7 100%); /* Bright mystery violet felt */
+  border: 15px solid #2d3436;
+  outline: 4px solid var(--table-border);
   border-radius: 500px;
-  box-shadow: inset 0 20px 50px rgba(0,0,0,0.9), 0 25px 50px rgba(0,0,0,0.7);
+  box-shadow: inset 0 20px 50px rgba(0,0,0,0.25), 0 25px 50px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1703,14 +1703,15 @@
   width: 260px;
   max-height: 120px;
   overflow-y: auto;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 183, 3, 0.15);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 8px;
   padding: 8px;
   margin-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  color: var(--text-primary);
 }
 
 .guess-row {
@@ -1720,7 +1721,8 @@
   font-size: 0.75rem;
   padding: 4px 8px;
   border-radius: 4px;
-  background: rgba(255,255,255,0.05);
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--text-primary);
 }
 
 .guess-row.approved {
@@ -1754,11 +1756,11 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, #203e3b 0%, #0d1f1d 100%); /* Deep agent teal */
-  border: 15px solid #0f2523;
-  outline: 4px solid #3c7d75;
+  background: radial-gradient(circle, #55efc4 0%, #00b894 100%); /* Bright agent mint green felt */
+  border: 15px solid #2d3436;
+  outline: 4px solid var(--table-border);
   border-radius: 500px;
-  box-shadow: inset 0 20px 50px rgba(0,0,0,0.9), 0 25px 50px rgba(0,0,0,0.7);
+  box-shadow: inset 0 20px 50px rgba(0,0,0,0.25), 0 25px 50px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1768,15 +1770,15 @@
 .player-desc-bubble {
   position: absolute;
   bottom: -35px;
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid rgba(255, 183, 3, 0.35);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: var(--text-primary);
   padding: 4px 10px;
   border-radius: 8px;
   font-size: 0.7rem;
   font-weight: 800;
   white-space: nowrap;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   z-index: 10;
   text-transform: uppercase;
 }
@@ -1791,11 +1793,11 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, #5b3524 0%, #20100a 100%); /* Executive Boardroom wood table */
-  border: 15px solid #140a06;
-  outline: 4px solid #b87333; /* Copper rim */
+  background: radial-gradient(circle, #ffeaa7 0%, #d8a060 100%); /* Premium light maple boardroom table */
+  border: 15px solid #7f8c8d;
+  outline: 4px solid var(--table-border);
   border-radius: 500px;
-  box-shadow: inset 0 20px 50px rgba(0,0,0,0.9), 0 25px 50px rgba(0,0,0,0.7);
+  box-shadow: inset 0 20px 50px rgba(0,0,0,0.25), 0 25px 50px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
   justify-content: center;

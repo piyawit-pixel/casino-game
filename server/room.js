@@ -141,6 +141,15 @@ export class Room {
     this.showdownResults = [];
     this.lastAction = null;
 
+    // Auto-refill online players who are broke so they can keep playing
+    this.players.forEach(p => {
+      if (p.isOnline && p.chips < this.bbAmount) {
+        const refillAmount = 10000;
+        p.chips += refillAmount;
+        this.addMessage('Dealer', `${p.name} ได้รับการเติมชิปอัตโนมัติ +${refillAmount.toLocaleString()} ชิป`);
+      }
+    });
+
     // Reset player card states
     this.players.forEach(p => {
       p.cards = [];

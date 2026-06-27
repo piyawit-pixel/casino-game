@@ -746,6 +746,16 @@ io.on('connection', (socket) => {
           console.log(`Room ${currentRoomId} is empty. Cleaning up.`);
           rooms.delete(currentRoomId);
         } else {
+          // Verify that there is at least one online host
+          const hostOnline = room.players.find(p => p.isOnline && p.isHost);
+          if (!hostOnline) {
+            const nextHost = room.players.find(p => p.isOnline);
+            if (nextHost) {
+              room.players.forEach(p => p.isHost = false);
+              nextHost.isHost = true;
+              room.addMessage('System', `${nextHost.name} has been appointed as the new host.`);
+            }
+          }
           broadcastRoomState(currentRoomId);
         }
       }
@@ -767,6 +777,16 @@ io.on('connection', (socket) => {
           console.log(`Room ${currentRoomId} is empty. Cleaning up.`);
           rooms.delete(currentRoomId);
         } else {
+          // Verify that there is at least one online host
+          const hostOnline = room.players.find(p => p.isOnline && p.isHost);
+          if (!hostOnline) {
+            const nextHost = room.players.find(p => p.isOnline);
+            if (nextHost) {
+              room.players.forEach(p => p.isHost = false);
+              nextHost.isHost = true;
+              room.addMessage('System', `${nextHost.name} has been appointed as the new host.`);
+            }
+          }
           broadcastRoomState(currentRoomId);
         }
       }
