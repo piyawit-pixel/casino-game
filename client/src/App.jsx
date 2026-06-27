@@ -1146,7 +1146,11 @@ function App() {
 
   const myPlayer = roomState.players.find(p => p.id === socket.id);
   const isHost = myPlayer?.isHost;
-  const isMyTurn = roomState.currentTurnIndex !== null && roomState.players[roomState.currentTurnIndex]?.id === socket.id;
+  
+  const activeTurnIndex = roomState.currentTurnIndex !== undefined && roomState.currentTurnIndex !== null 
+    ? roomState.currentTurnIndex 
+    : roomState.turnIndex;
+  const isMyTurn = activeTurnIndex !== null && activeTurnIndex !== undefined && roomState.players[activeTurnIndex]?.id === socket.id;
 
   // Reorder players array to place current player at position 0 (bottom of table)
   let reorderedPlayers = [...roomState.players];
