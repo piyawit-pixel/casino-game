@@ -834,13 +834,22 @@ function App() {
         );
       case 'GAME_OVER':
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', textAlign: 'center' }}>
             <span style={{ color: 'var(--primary)', fontSize: '1.2rem', fontWeight: 'bold' }}>
               🏆 {roomState.winner?.name} ชนะการแข่งขัน!
             </span>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
               โค่นอำนาจเพื่อนทุกคนบนโต๊ะสำเร็จ
             </span>
+            {isHost && (
+              <button 
+                className="btn-primary animate-pulse" 
+                onClick={handleStartGame}
+                style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
+              >
+                🔄 เริ่มใหม่ (Play Again)
+              </button>
+            )}
           </div>
         );
       default:
@@ -1628,6 +1637,27 @@ function App() {
                   )}
                 </div>
 
+                {/* Uno Game Over Popup */}
+                {roomState.gameState === 'GAME_OVER' && (
+                  <div className="color-select-popup" style={{ width: '310px', zIndex: 100 }}>
+                    <span className="coup-prompt-title">🏆 จบเกมการ์ด UNO!</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '14px 0', alignItems: 'center' }}>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                        🎉 {roomState.players.find(p => p.cardsCount === 0 || p.hand?.length === 0)?.name || 'ผู้ชนะ'} ชนะการแข่งขัน!
+                      </span>
+                      {isHost && (
+                        <button 
+                          className="btn-primary animate-pulse" 
+                          onClick={handleStartGame}
+                          style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
+                        >
+                          🔄 เริ่มใหม่ (Play Again)
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Circular Players */}
                 {playerNodes.map(({ player, x, y, isTurn }) => {
                   const isMyNode = player.id === socket.id;
@@ -1817,8 +1847,19 @@ function App() {
                   )}
 
                   {roomState.gameState === 'GAME_OVER' && (
-                    <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--primary)', marginTop: '6px' }}>
-                      🏆 การทำดีลจบลงแล้ว! ตรวจสอบเงินบัญชีผู้ชนะ
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--primary)', marginTop: '6px' }}>
+                        🏆 การทำดีลจบลงแล้ว! ตรวจสอบเงินบัญชีผู้ชนะ
+                      </span>
+                      {isHost && (
+                        <button 
+                          className="btn-primary animate-pulse" 
+                          onClick={handleStartGame}
+                          style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
+                        >
+                          🔄 เริ่มใหม่ (Play Again)
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2060,7 +2101,7 @@ function App() {
                   )}
 
                   {roomState.gameState === 'GAME_OVER' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', textAlign: 'center' }}>
                       <span style={{ fontSize: '1.05rem', fontWeight: 'bold', color: roomState.winner === 'civilians' ? '#2ed573' : '#ff4757' }}>
                         {roomState.winner === 'civilians' ? '🎉 ฝั่งคนธรรมดา (Civilians) ชนะ!' : '👽 ฝั่งสายลับ/คนใบ้ ชนะ!'}
                       </span>
@@ -2068,6 +2109,15 @@ function App() {
                         <span>คำของคนธรรมดา: <b>{roomState.civilianWord}</b></span>
                         <span>คำของสายลับ: <b>{roomState.undercoverWord}</b></span>
                       </div>
+                      {isHost && (
+                        <button 
+                          className="btn-primary animate-pulse" 
+                          onClick={handleStartGame}
+                          style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
+                        >
+                          🔄 เริ่มใหม่ (Play Again)
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2328,8 +2378,19 @@ function App() {
                   )}
 
                   {roomState.gameState === 'GAME_OVER' && (
-                    <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: roomState.winner === 'commoners' ? '#2ed573' : '#ff4757', marginTop: '6px' }}>
-                      {roomState.winner === 'commoners' ? '🎉 ฝั่งคนธรรมดา (Commoners) ชนะ!' : '👽 ฝั่งคนวงใน (Insider) ชนะ!'}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: roomState.winner === 'commoners' ? '#2ed573' : '#ff4757', marginTop: '6px' }}>
+                        {roomState.winner === 'commoners' ? '🎉 ฝั่งคนธรรมดา (Commoners) ชนะ!' : '👽 ฝั่งคนวงใน (Insider) ชนะ!'}
+                      </span>
+                      {isHost && (
+                        <button 
+                          className="btn-primary animate-pulse" 
+                          onClick={handleStartGame}
+                          style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
+                        >
+                          🔄 เริ่มใหม่ (Play Again)
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2519,13 +2580,22 @@ function App() {
                   )}
 
                   {roomState.gameState === 'GAME_OVER' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', textAlign: 'center' }}>
                       <span style={{ color: 'var(--primary)', fontSize: '1.1rem', fontWeight: 'bold' }}>
                         🏆 ฝ่าย {roomState.winnerRole === 'law' ? 'ผู้พิทักษ์กฎหมาย 🤠' : roomState.winnerRole === 'outlaws' ? 'กลุ่มนอกกฎหมาย 💀' : 'คนทรยศ 🐍'} ชนะ!
                       </span>
                       <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                         การประลองฝุ่นตลบจบลงแล้ว
                       </span>
+                      {isHost && (
+                        <button 
+                          className="btn-primary animate-pulse" 
+                          onClick={handleStartGame}
+                          style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
+                        >
+                          🔄 เริ่มใหม่ (Play Again)
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
