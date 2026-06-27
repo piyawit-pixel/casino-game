@@ -1,19 +1,121 @@
 const WORD_LIST = [
+  // --- สิ่งมีชีวิต / สัตว์ ---
   { word: 'ไดโนเสาร์ (Dinosaur)', category: 'สิ่งมีชีวิต' },
-  { word: 'พิซซ่า (Pizza)', category: 'อาหาร' },
-  { word: 'สมาร์ทโฟน (Smartphone)', category: 'สิ่งของ' },
-  { word: 'เครื่องบิน (Airplane)', category: 'พาหนะ' },
-  { word: 'หอไอเฟล (Eiffel Tower)', category: 'สถานที่' },
-  { word: 'ฟุตบอล (Football)', category: 'กีฬา' },
-  { word: 'แว่นตา (Glasses)', category: 'สิ่งของ' },
   { word: 'แมว (Cat)', category: 'สัตว์เลี้ยง' },
-  { word: 'ตู้เย็น (Refrigerator)', category: 'เครื่องใช้ไฟฟ้า' },
-  { word: 'โตเกียว (Tokyo)', category: 'เมือง' },
-  { word: 'แฮมเบอร์เกอร์ (Hamburger)', category: 'อาหาร' },
+  { word: 'สุนัข (Dog)', category: 'สัตว์เลี้ยง' },
   { word: 'ปลาวาฬ (Whale)', category: 'สัตว์น้ำ' },
+  { word: 'ยีราฟ (Giraffe)', category: 'สัตว์บก' },
+  { word: 'แพนด้า (Panda)', category: 'สัตว์บก' },
+  { word: 'ผึ้ง (Bee)', category: 'แมลง' },
+  { word: 'ฉลาม (Shark)', category: 'สัตว์น้ำ' },
+  { word: 'นกอินทรี (Eagle)', category: 'สัตว์ปีก' },
+  { word: 'ค้างคาว (Bat)', category: 'สัตว์บก' },
+  { word: 'ช้าง (Elephant)', category: 'สัตว์บก' },
+  { word: 'สิงโต (Lion)', category: 'สัตว์ป่า' },
+  { word: 'เสือ (Tiger)', category: 'สัตว์ป่า' },
+  { word: 'จระเข้ (Crocodile)', category: 'สัตว์เลื้อยคลาน' },
+  { word: 'งู (Snake)', category: 'สัตว์เลื้อยคลาน' },
+  { word: 'กบ (Frog)', category: 'สัตว์สะเทินน้ำสะเทินบก' },
+  { word: 'เพนกวิน (Penguin)', category: 'สัตว์ปีก' },
+
+  // --- อาหาร / เครื่องดื่ม ---
+  { word: 'พิซซ่า (Pizza)', category: 'อาหาร' },
+  { word: 'แฮมเบอร์เกอร์ (Hamburger)', category: 'อาหาร' },
+  { word: 'ชานมไข่มุก (Bubble Tea)', category: 'เครื่องดื่ม' },
+  { word: 'กาแฟ (Coffee)', category: 'เครื่องดื่ม' },
+  { word: 'ไอศกรีม (Ice Cream)', category: 'ของหวาน' },
+  { word: 'ส้มตำ (Som Tum)', category: 'อาหาร' },
+  { word: 'ต้มยำกุ้ง (Tom Yum Goong)', category: 'อาหาร' },
+  { word: 'เบียร์ (Beer)', category: 'เครื่องดื่ม' },
+  { word: 'ช็อกโกแลต (Chocolate)', category: 'ของหวาน' },
+  { word: 'ทุเรียน (Durian)', category: 'ผลไม้' },
+  { word: 'แตงโม (Watermelon)', category: 'ผลไม้' },
+  { word: 'กล้วย (Banana)', category: 'ผลไม้' },
+  { word: 'ซูชิ (Sushi)', category: 'อาหาร' },
+  { word: 'บะหมี่กึ่งสำเร็จรูป (Instant Noodles)', category: 'อาหาร' },
+  { word: 'ชีส (Cheese)', category: 'วัตถุดิบอาหาร' },
+
+  // --- สิ่งของ / เครื่องใช้ ---
+  { word: 'สมาร์ทโฟน (Smartphone)', category: 'เทคโนโลยี' },
+  { word: 'แว่นตา (Glasses)', category: 'สิ่งของเครื่องใช้' },
+  { word: 'ตู้เย็น (Refrigerator)', category: 'เครื่องใช้ไฟฟ้า' },
+  { word: 'ยาสีฟัน (Toothpaste)', category: 'ของใช้ส่วนตัว' },
+  { word: 'ร่ม (Umbrella)', category: 'สิ่งของเครื่องใช้' },
+  { word: 'พัดลม (Fan)', category: 'เครื่องใช้ไฟฟ้า' },
+  { word: 'นาฬิกาข้อมือ (Watch)', category: 'เครื่องประดับ' },
+  { word: 'กระจกเงา (Mirror)', category: 'ของแต่งบ้าน' },
+  { word: 'กระเป๋าตังค์ (Wallet)', category: 'ของใช้ส่วนตัว' },
+  { word: 'แปรงสีฟัน (Toothbrush)', category: 'ของใช้ส่วนตัว' },
+  { word: 'กุญแจ (Key)', category: 'สิ่งของเครื่องใช้' },
+  { word: 'โคมไฟ (Lamp)', category: 'เครื่องใช้ไฟฟ้า' },
+  { word: 'หมอน (Pillow)', category: 'เครื่องนอน' },
+  { word: 'หนังสือ (Book)', category: 'สื่อสิ่งพิมพ์' },
+  { word: 'เตาไมโครเวฟ (Microwave)', category: 'เครื่องใช้ไฟฟ้า' },
+  { word: 'เครื่องซักผ้า (Washing Machine)', category: 'เครื่องใช้ไฟฟ้า' },
+
+  // --- พาหนะ / คมนาคม ---
+  { word: 'เครื่องบิน (Airplane)', category: 'พาหนะ' },
+  { word: 'จักรยาน (Bicycle)', category: 'พาหนะ' },
+  { word: 'รถไฟ (Train)', category: 'พาหนะ' },
+  { word: 'เรือใบ (Sailboat)', category: 'พาหนะ' },
+  { word: 'รถมอเตอร์ไซค์ (Motorcycle)', category: 'พาหนะ' },
+  { word: 'รถดับเพลิง (Fire Truck)', category: 'พาหนะพิเศษ' },
+  { word: 'เฮลิคอปเตอร์ (Helicopter)', category: 'พาหนะ' },
+  { word: 'รถตู้ (Van)', category: 'พาหนะ' },
+  { word: 'จรวด (Rocket)', category: 'ยานอวกาศ' },
+  { word: 'รถไฟใต้ดิน (Subway)', category: 'พาหนะ' },
+
+  // --- สถานที่ / ท่องเที่ยว ---
+  { word: 'หอไอเฟล (Eiffel Tower)', category: 'สถานที่สำคัญ' },
+  { word: 'โตเกียว (Tokyo)', category: 'เมืองหลวง' },
   { word: 'ภูเขาไฟ (Volcano)', category: 'ธรรมชาติ' },
+  { word: 'ชายหาด (Beach)', category: 'แหล่งท่องเที่ยว' },
+  { word: 'โรงเรียน (School)', category: 'สถานที่บริการสาธารณะ' },
+  { word: 'โรงพยาบาล (Hospital)', category: 'สถานที่บริการสาธารณะ' },
+  { word: 'สวนสนุก (Amusement Park)', category: 'สถานที่บันเทิง' },
+  { word: 'พิพิธภัณฑ์ (Museum)', category: 'สถานที่ท่องเที่ยว' },
+  { word: 'สนามบิน (Airport)', category: 'คมนาคม' },
+  { word: 'วัด (Temple)', category: 'ศาสนสถาน' },
+  { word: 'น้ำตก (Waterfall)', category: 'ธรรมชาติ' },
+  { word: 'ทะเลทราย (Desert)', category: 'ธรรมชาติ' },
+  { word: 'ห้องสมุด (Library)', category: 'สถานที่บริการสาธารณะ' },
+  { word: 'กรุงเทพฯ (Bangkok)', category: 'เมืองหลวง' },
+
+  // --- กีฬา / กิจกรรม ---
+  { word: 'ฟุตบอล (Football)', category: 'กีฬา' },
+  { word: 'บาสเกตบอล (Basketball)', category: 'กีฬา' },
+  { word: 'ว่ายน้ำ (Swimming)', category: 'กีฬา / กิจกรรม' },
+  { word: 'วิ่งมาราธอน (Marathon)', category: 'กีฬา' },
+  { word: 'ตกปลา (Fishing)', category: 'กิจกรรมยามว่าง' },
+  { word: 'ปีนเขา (Climbing)', category: 'กิจกรรมแอดเวนเจอร์' },
+  { word: 'แบดมินตัน (Badminton)', category: 'กีฬา' },
+  { word: 'กอล์ฟ (Golf)', category: 'กีฬา' },
+  { word: 'โยคะ (Yoga)', category: 'การออกกำลังกาย' },
+  { word: 'หมากรุก (Chess)', category: 'เกมกระดาน' },
+
+  // --- อาชีพ ---
+  { word: 'หมอ (Doctor)', category: 'อาชีพ' },
+  { word: 'ครู (Teacher)', category: 'อาชีพ' },
+  { word: 'ตำรวจ (Police)', category: 'อาชีพ' },
+  { word: 'นักบิน (Pilot)', category: 'อาชีพ' },
+  { word: 'พ่อครัว (Chef)', category: 'อาชีพ' },
+  { word: 'ชาวนา (Farmer)', category: 'อาชีพ' },
+  { word: 'นักร้อง (Singer)', category: 'อาชีพ' },
+  { word: 'นักแสดง (Actor)', category: 'อาชีพ' },
+  { word: 'วิศวกร (Engineer)', category: 'อาชีพ' },
+  { word: 'นักดับเพลิง (Firefighter)', category: 'อาชีพ' },
+
+  // --- วิทยาศาสตร์ / เทคโนโลยี / เบ็ดเตล็ด ---
   { word: 'อินเทอร์เน็ต (Internet)', category: 'เทคโนโลยี' },
-  { word: 'ยาสีฟัน (Toothpaste)', category: 'ของใช้ในบ้าน' }
+  { word: 'ดวงอาทิตย์ (Sun)', category: 'ดาราศาสตร์' },
+  { word: 'คอมพิวเตอร์ (Computer)', category: 'เทคโนโลยี' },
+  { word: 'ปฏิทิน (Calendar)', category: 'เวลา' },
+  { word: 'เหรียญ (Coin)', category: 'เงินตรา' },
+  { word: 'กล้องถ่ายรูป (Camera)', category: 'สิ่งของ' },
+  { word: 'เปียโน (Piano)', category: 'เครื่องดนตรี' },
+  { word: 'กีตาร์ (Guitar)', category: 'เครื่องดนตรี' },
+  { word: 'ดวงจันทร์ (Moon)', category: 'ดาราศาสตร์' },
+  { word: 'สายรุ้ง (Rainbow)', category: 'ปรากฏการณ์ธรรมชาติ' }
 ];
 
 function shuffle(array) {
@@ -41,6 +143,7 @@ export class InsiderRoom {
     this.guesses = []; // { id, name, text, approved: null/true/false }
     this.guesserId = null; // Who guessed the word correctly
 
+    this.usedWordsHistory = []; // Tracks played secret words to prevent duplication
     // Timer management
     this.timerSeconds = 300; // 5 minutes
     this.timerInterval = null;
@@ -128,7 +231,14 @@ export class InsiderRoom {
     });
 
     // 2. Select Secret Word
-    const selected = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+    let availableWords = WORD_LIST.filter(w => !this.usedWordsHistory.includes(w.word));
+    if (availableWords.length === 0) {
+      this.usedWordsHistory = [];
+      availableWords = WORD_LIST;
+    }
+    const selected = availableWords[Math.floor(Math.random() * availableWords.length)];
+    this.usedWordsHistory.push(selected.word);
+
     this.targetWord = selected.word;
     this.category = selected.category;
 
