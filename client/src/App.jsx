@@ -325,6 +325,12 @@ function App() {
     setName('');
   };
 
+  const handleRefillChips = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('refillChips', { amount: 10000 });
+    }
+  };
+
   // Initialize Socket.io connection
   useEffect(() => {
     const socketUrl = import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin;
@@ -338,6 +344,13 @@ function App() {
 
     newSocket.on('connect', () => {
       console.log('Connected to websocket server.');
+    });
+
+    newSocket.on('refillSuccess', ({ chips }) => {
+      soundManager.playCoin();
+      if (chips !== null) {
+        setUserProfile(prev => prev ? { ...prev, chips } : null);
+      }
     });
 
     newSocket.on('roomCreated', ({ roomId }) => {
@@ -856,8 +869,26 @@ function App() {
                 <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary)', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                   <span>👤</span> {userProfile.username}
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#2ed573', marginTop: '4px', fontWeight: 'bold' }}>
-                  🪙 ชิปสะสม: {userProfile.chips.toLocaleString()} ชิป
+                <div style={{ fontSize: '0.85rem', color: '#2ed573', marginTop: '4px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>🪙 ชิปสะสม: {userProfile.chips.toLocaleString()} ชิป</span>
+                  <button 
+                    type="button"
+                    onClick={handleRefillChips}
+                    style={{
+                      background: 'rgba(46, 213, 115, 0.15)',
+                      border: '1px solid rgba(46, 213, 115, 0.3)',
+                      color: '#2ed573',
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      transition: 'all 0.2s ease',
+                      boxShadow: 'none'
+                    }}
+                  >
+                    ➕ เติมชิปฟรี (+10K)
+                  </button>
                 </div>
               </div>
               <button 
@@ -2856,7 +2887,46 @@ function App() {
           </div>
         ) : (
           <>
-        {roomState.gameState === 'WAITING' && (
+            {/* Sidebar User Profile & Refill Panel */}
+            <div className="glass" style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '6px', background: 'rgba(0,0,0,0.15)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  👤 {userProfile ? userProfile.username : name || 'ผู้มาเยือน'}
+                </span>
+                <span style={{ fontSize: '0.8rem', color: '#2ed573', fontWeight: 'bold' }}>
+                  🪙 {userProfile ? `${userProfile.chips.toLocaleString()} ชิป` : myPlayer ? `${myPlayer.chips.toLocaleString()} ชิป` : '0 ชิป'}
+                </span>
+              </div>
+              
+              {/* Refill Button (Available for Poker room, or any room to refill backend) */}
+              {(roomState.gameType === 'poker' || userProfile) && (
+                <button 
+                  type="button" 
+                  onClick={handleRefillChips}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(46, 213, 115, 0.15)',
+                    border: '1px solid rgba(46, 213, 115, 0.3)',
+                    color: '#2ed573',
+                    padding: '6px 0',
+                    borderRadius: '6px',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    boxShadow: 'none'
+                  }}
+                >
+                  ➕ รับชิปฟรี (+10,000 ฟรี)
+                </button>
+              )}
+            </div>
+
+            {roomState.gameState === 'WAITING' && (
           <div className="lobby-customizer-panel glass" style={{ padding: '14px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--primary)', fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>
               🎨 แต่งโปรไฟล์ของคุณ

@@ -196,6 +196,36 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Refill Chips handler
+  socket.on('refillChips', async ({ amount }) => {
+    const refillAmount = parseInt(amount) || 10000;
+    let newDbChips = null;
+
+    if (socket.username) {
+      try {
+        const currentChips = await getUserChips(socket.username);
+        newDbChips = currentChips + refillAmount;
+        await saveUserChips(socket.username, newDbChips);
+      } catch (err) {
+        console.error('Database refill error:', err);
+      }
+    }
+
+    if (currentRoomId) {
+      const room = rooms.get(currentRoomId);
+      if (room && room.constructor.name === 'Room') {
+        const player = room.players.find(p => p.id === socket.id);
+        if (player) {
+          player.chips += refillAmount;
+          await broadcastRoomState(currentRoomId);
+        }
+      }
+    }
+
+    socket.emit('refillSuccess', { chips: newDbChips });
+    console.log(`Refill successful for ${socket.username || socket.id}: +${refillAmount} chips`);
+  });
+
   // Start the game
   socket.on('startGame', () => {
     if (!currentRoomId) return;
