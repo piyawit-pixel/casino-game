@@ -166,6 +166,18 @@ function BossCard({ type, value, onClick, isSelectable = true }) {
   );
 }
 
+function renderPlayerAvatar(player, isDealer = false) {
+  const frameClass = player.frame && player.frame !== 'default' ? `frame-${player.frame}` : '';
+  return (
+    <div className="player-avatar-wrapper">
+      <div className={`player-avatar ${frameClass}`}>
+        {player.avatar || player.name.substring(0, 2).toUpperCase()}
+      </div>
+      {isDealer && <div className="player-dealer-btn">D</div>}
+    </div>
+  );
+}
+
 function App() {
   const [socket, setSocket] = useState(null);
   const [roomIdInput, setRoomIdInput] = useState('');
@@ -186,6 +198,10 @@ function App() {
   const [bossProposedShares, setBossProposedShares] = useState({});
   const [soundMuted, setSoundMuted] = useState(false);
   const prevRoomStateRef = useRef(null);
+  const [slotBet, setSlotBet] = useState(100);
+  const [slotReels, setSlotReels] = useState(['🍒', '🍋', '🍇']);
+  const [slotSpinning, setSlotSpinning] = useState(false);
+  const [slotWinMessage, setSlotWinMessage] = useState('');
   
   const chatEndRef = useRef(null);
   const socketRef = useRef(null);
@@ -256,6 +272,29 @@ function App() {
     newSocket.on('errorMsg', (msg) => {
       setErrorMsg(msg);
       setTimeout(() => setErrorMsg(''), 4000);
+    });
+
+    newSocket.on('slotsResult', ({ reels, winAmount }) => {
+      setSlotSpinning(true);
+      setSlotWinMessage('');
+      
+      let interval = setInterval(() => {
+        soundManager.playWhoosh();
+      }, 100);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        setSlotSpinning(false);
+        setSlotReels(reels);
+        
+        if (winAmount > 0) {
+          soundManager.playCoin();
+          setSlotWinMessage(`🎉 ชนะ +${winAmount} ชิป!`);
+        } else {
+          soundManager.playBuzzer();
+          setSlotWinMessage('😢 เสียใจด้วยนะ!');
+        }
+      }, 1200);
     });
 
     return () => {
@@ -1052,11 +1091,7 @@ function App() {
                       )}
 
                       {/* Avatar */}
-                      <div className="player-avatar-wrapper">
-                        <div className="player-avatar">
-                          {player.name.substring(0, 2).toUpperCase()}
-                        </div>
-                      </div>
+                      {renderPlayerAvatar(player)}
 
                       {/* Player Info Card */}
                       <div className="player-info-card" style={{ marginBottom: '8px' }}>
@@ -1227,11 +1262,7 @@ function App() {
                       )}
 
                       {/* Avatar */}
-                      <div className="player-avatar-wrapper">
-                        <div className="player-avatar">
-                          {player.name.substring(0, 2).toUpperCase()}
-                        </div>
-                      </div>
+                      {renderPlayerAvatar(player)}
 
                       {/* Player Info Card */}
                       <div className="player-info-card">
@@ -1420,11 +1451,7 @@ function App() {
                       )}
 
                       {/* Avatar */}
-                      <div className="player-avatar-wrapper">
-                        <div className="player-avatar">
-                          {player.name.substring(0, 2).toUpperCase()}
-                        </div>
-                      </div>
+                      {renderPlayerAvatar(player)}
 
                       {/* Player Info Card */}
                       <div className="player-info-card">
@@ -1689,11 +1716,7 @@ function App() {
                       )}
 
                       {/* Avatar */}
-                      <div className="player-avatar-wrapper">
-                        <div className="player-avatar">
-                          {player.name.substring(0, 2).toUpperCase()}
-                        </div>
-                      </div>
+                      {renderPlayerAvatar(player)}
 
                       {/* Player Info Card */}
                       <div className="player-info-card">
@@ -1944,11 +1967,7 @@ function App() {
                       )}
 
                       {/* Avatar */}
-                      <div className="player-avatar-wrapper">
-                        <div className="player-avatar">
-                          {player.name.substring(0, 2).toUpperCase()}
-                        </div>
-                      </div>
+                      {renderPlayerAvatar(player)}
 
                       {/* Player Info Card */}
                       <div className="player-info-card">
@@ -2164,11 +2183,7 @@ function App() {
                       )}
 
                       {/* Avatar */}
-                      <div className="player-avatar-wrapper">
-                        <div className="player-avatar">
-                          {player.name.substring(0, 2).toUpperCase()}
-                        </div>
-                      </div>
+                      {renderPlayerAvatar(player)}
 
                       {/* Player Info Card */}
                       <div className="player-info-card">
@@ -2371,12 +2386,7 @@ function App() {
                         </div>
                       )}
 
-                      <div className="player-avatar-wrapper">
-                        <div className="player-avatar">
-                          {player.name.substring(0, 2).toUpperCase()}
-                        </div>
-                        {isDealer && <div className="player-dealer-btn">D</div>}
-                      </div>
+                      {renderPlayerAvatar(player, isDealer)}
 
                       <div className="player-info-card">
                         <div className="player-name">{player.name} {player.id === socket.id && '(คุณ)'}</div>
@@ -2515,6 +2525,114 @@ function App() {
 
       {/* Chat Sidebar Area (Right Side) */}
       <div className="chat-sidebar">
+        {roomState.gameState === 'WAITING' && (
+          <div className="lobby-customizer-panel glass" style={{ padding: '14px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--primary)', fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>
+              🎨 แต่งโปรไฟล์ของคุณ
+            </span>
+            
+            {/* Avatar emojis choice */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>เลือกอวตาร์อิโมจิ:</span>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[null, '🦊', '🐱', '🦁', '🕵️', '🤠', '😈', '🤡', '👽', '🐼', '🤖', '💀'].map(emoji => (
+                  <button 
+                    key={emoji || 'default'}
+                    onClick={() => socket.emit('updateProfile', { avatar: emoji, frame: myPlayer?.frame })}
+                    style={{
+                      background: (myPlayer?.avatar === emoji || (emoji === null && !myPlayer?.avatar)) ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                      color: (myPlayer?.avatar === emoji || (emoji === null && !myPlayer?.avatar)) ? '#000' : '#fff',
+                      border: 'none',
+                      padding: '4px 6px',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {emoji || 'ชื่อย่อ'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Frame borders choice */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>เลือกกรอบโปรไฟล์:</span>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[
+                  { value: 'default', label: 'ปกติ' },
+                  { value: 'neon-pink', label: '💖 นีออนชมพู' },
+                  { value: 'gold-elite', label: '👑 ทองคำขาว' },
+                  { value: 'rainbow', label: '🌈 สายรุ้ง' }
+                ].map(frame => (
+                  <button 
+                    key={frame.value}
+                    onClick={() => socket.emit('updateProfile', { avatar: myPlayer?.avatar, frame: frame.value })}
+                    style={{
+                      background: (myPlayer?.frame === frame.value || (frame.value === 'default' && !myPlayer?.frame)) ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                      color: (myPlayer?.frame === frame.value || (frame.value === 'default' && !myPlayer?.frame)) ? '#000' : '#fff',
+                      border: 'none',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      fontSize: '0.7rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {frame.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {roomState.gameState === 'WAITING' && (
+          <div className="slots-container glass" style={{ border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', borderRadius: 0, margin: 0, width: '100%', maxWidth: 'none' }}>
+            <div className="slots-title">🎰 มินิสล็อตชิงรางวัล (Lobby Slots)</div>
+            
+            {/* Reels */}
+            <div className="slots-reels">
+              {slotReels.map((symbol, idx) => (
+                <div key={idx} className={`slots-reel ${slotSpinning ? 'spinning' : ''}`}>
+                  {slotSpinning ? ['🍒', '🍋', '7️⃣', '💎'][Math.floor(Math.random() * 4)] : symbol}
+                </div>
+              ))}
+            </div>
+
+            {/* Bet buttons and Spin button */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center', marginTop: '10px' }}>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>เดิมพัน:</span>
+              <select 
+                value={slotBet} 
+                onChange={(e) => setSlotBet(Number(e.target.value))}
+                disabled={slotSpinning}
+                style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.75rem', borderRadius: '4px', padding: '2px 4px' }}
+              >
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+                <option value={500}>500</option>
+              </select>
+
+              <button 
+                className="btn-primary"
+                onClick={() => socket.emit('lobbySpinSlots', { bet: slotBet })}
+                disabled={slotSpinning || (myPlayer?.chips && myPlayer.chips < slotBet)}
+                style={{ width: 'auto', margin: 0, padding: '4px 14px', fontSize: '0.75rem', borderRadius: '6px' }}
+              >
+                {slotSpinning ? 'กำลังหมุน...' : 'SPIN 🎰'}
+              </button>
+            </div>
+
+            {/* Win/Loss message */}
+            {slotWinMessage && (
+              <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: slotWinMessage.includes('ชนะ') ? '#2ed573' : '#ff4757', marginTop: '8px' }}>
+                {slotWinMessage}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="chat-header">
           <span>สนทนากับเพื่อน</span>
           <span className="active-count">ออนไลน์: {roomState.players.filter(p => p.isOnline).length}</span>

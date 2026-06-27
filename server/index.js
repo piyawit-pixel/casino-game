@@ -527,6 +527,83 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Profile customizer event
+  socket.on('updateProfile', ({ avatar, frame }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (player) {
+      player.avatar = avatar || null;
+      player.frame = frame || 'default';
+      broadcastRoomState(currentRoomId);
+    }
+  });
+
+  // Lobby slots spin event
+  socket.on('lobbySpinSlots', ({ bet }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room || room.gameState !== 'WAITING') return;
+
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player) return;
+
+    if (player.chips === undefined) {
+      player.chips = 1000;
+    }
+
+    const betAmount = Number(bet);
+    if (isNaN(betAmount) || betAmount <= 0) {
+      socket.emit('errorMsg', 'กรุณาระบุจำนวนชิปที่ถูกต้อง');
+      return;
+    }
+
+    if (player.chips < betAmount) {
+      socket.emit('errorMsg', 'ชิปไม่เพียงพอสำหรับการสปิน');
+      return;
+    }
+
+    // Deduct bet
+    player.chips -= betAmount;
+
+    // Spin reels
+    const symbols = ['🍒', '🍋', '🍇', '🔔', '💎', '7️⃣'];
+    const reels = [
+      symbols[Math.floor(Math.random() * symbols.length)],
+      symbols[Math.floor(Math.random() * symbols.length)],
+      symbols[Math.floor(Math.random() * symbols.length)]
+    ];
+
+    // Calculate win multiplier
+    let winMultiplier = 0;
+    if (reels[0] === reels[1] && reels[1] === reels[2]) {
+      const matchSymbol = reels[0];
+      if (matchSymbol === '7️⃣') winMultiplier = 25;
+      else if (matchSymbol === '💎') winMultiplier = 15;
+      else if (matchSymbol === '🔔') winMultiplier = 10;
+      else winMultiplier = 5;
+    } else if (reels[0] === reels[1] || reels[1] === reels[2] || reels[0] === reels[2]) {
+      winMultiplier = 2;
+    }
+
+    const winAmount = betAmount * winMultiplier;
+    player.chips += winAmount;
+
+    // Send back specific slots outcome
+    socket.emit('slotsResult', {
+      reels,
+      winAmount,
+      balance: player.chips
+    });
+
+    if (winMultiplier >= 5) {
+      room.addMessage('System', `🎉 ${player.name} ชนะรางวัลแจ็คพอตสล็อตในห้องล็อบบี้ ได้รับ ${winAmount} ชิป! (${reels.join(' ')})`);
+    }
+
+    broadcastRoomState(currentRoomId);
+  });
+
   // Send a chat message
   socket.on('sendMessage', (text) => {
     if (!currentRoomId || !text || text.trim() === '') return;
