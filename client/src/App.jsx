@@ -212,8 +212,8 @@ function BossCard({ type, value, onClick, isSelectable = true }) {
 function renderPlayerAvatar(player, isDealer = false) {
   const frameClass = player.frame && player.frame !== 'default' ? `frame-${player.frame}` : '';
   return (
-    <div className="player-avatar-wrapper">
-      <div className={`player-avatar ${frameClass}`}>
+    <div className={`player-avatar-wrapper ${frameClass}`}>
+      <div className="player-avatar">
         {player.avatar || player.name.substring(0, 2).toUpperCase()}
       </div>
       {isDealer && <div className="player-dealer-btn">D</div>}
@@ -2929,7 +2929,7 @@ function App() {
             </div>
 
             {roomState.gameState === 'WAITING' && (
-          <div className="lobby-customizer-panel glass" style={{ padding: '14px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="lobby-customizer-panel glass" style={{ padding: '14px', borderBottom: '1px solid var(--border-card)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--primary)', fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>
               🎨 แต่งโปรไฟล์ของคุณ
             </span>
@@ -2943,13 +2943,14 @@ function App() {
                     key={emoji || 'default'}
                     onClick={() => socket.emit('updateProfile', { avatar: emoji, frame: myPlayer?.frame })}
                     style={{
-                      background: (myPlayer?.avatar === emoji || (emoji === null && !myPlayer?.avatar)) ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                      color: (myPlayer?.avatar === emoji || (emoji === null && !myPlayer?.avatar)) ? '#000' : '#fff',
-                      border: 'none',
+                      background: (myPlayer?.avatar === emoji || (emoji === null && !myPlayer?.avatar)) ? 'var(--primary)' : 'rgba(0,0,0,0.04)',
+                      color: (myPlayer?.avatar === emoji || (emoji === null && !myPlayer?.avatar)) ? '#fff' : 'var(--text-primary)',
+                      border: '1px solid rgba(0,0,0,0.08)',
                       padding: '4px 6px',
                       borderRadius: '6px',
                       fontSize: '0.75rem',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
                     }}
                   >
                     {emoji || 'ชื่อย่อ'}
@@ -2972,13 +2973,14 @@ function App() {
                     key={frame.value}
                     onClick={() => socket.emit('updateProfile', { avatar: myPlayer?.avatar, frame: frame.value })}
                     style={{
-                      background: (myPlayer?.frame === frame.value || (frame.value === 'default' && !myPlayer?.frame)) ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                      color: (myPlayer?.frame === frame.value || (frame.value === 'default' && !myPlayer?.frame)) ? '#000' : '#fff',
-                      border: 'none',
+                      background: (myPlayer?.frame === frame.value || (frame.value === 'default' && !myPlayer?.frame)) ? 'var(--primary)' : 'rgba(0,0,0,0.04)',
+                      color: (myPlayer?.frame === frame.value || (frame.value === 'default' && !myPlayer?.frame)) ? '#fff' : 'var(--text-primary)',
+                      border: '1px solid rgba(0,0,0,0.08)',
                       padding: '4px 8px',
                       borderRadius: '6px',
                       fontSize: '0.7rem',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
                     }}
                   >
                     {frame.label}
@@ -2990,7 +2992,7 @@ function App() {
         )}
 
         {roomState.gameState === 'WAITING' && (
-          <div className="slots-container glass" style={{ border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', borderRadius: 0, margin: 0, width: '100%', maxWidth: 'none' }}>
+          <div className="slots-container glass" style={{ border: 'none', borderBottom: '1px solid var(--border-card)', borderRadius: 0, margin: 0, width: '100%', maxWidth: 'none' }}>
             <div className="slots-title">🎰 มินิสล็อตชิงรางวัล (Lobby Slots)</div>
             
             {/* Reels */}
