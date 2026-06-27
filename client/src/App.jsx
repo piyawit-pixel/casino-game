@@ -644,74 +644,30 @@ function App() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">เลือกเกมที่ต้องการเล่น (Select Game)</label>
-              <div className="game-type-selector">
-                <label className="game-type-option">
-                  <input 
-                    type="radio" 
-                    name="gameType" 
-                    value="poker" 
-                    checked={gameType === 'poker'}
-                    onChange={() => setGameType('poker')} 
-                  />
-                  <div className="game-type-card">
-                    <span className="game-type-icon">♣️</span>
-                    <span className="game-type-label">เท็กซัส โฮลเด็ม</span>
-                  </div>
-                </label>
-                <label className="game-type-option">
-                  <input 
-                    type="radio" 
-                    name="gameType" 
-                    value="checkers" 
-                    checked={gameType === 'checkers'}
-                    onChange={() => setGameType('checkers')} 
-                  />
-                  <div className="game-type-card">
-                    <span className="game-type-icon">🏁</span>
-                    <span className="game-type-label">หมากฮอส</span>
-                  </div>
-                </label>
-                <label className="game-type-option">
-                  <input 
-                    type="radio" 
-                    name="gameType" 
-                    value="coup" 
-                    checked={gameType === 'coup'}
-                    onChange={() => setGameType('coup')} 
-                  />
-                  <div className="game-type-card">
-                    <span className="game-type-icon">👑</span>
-                    <span className="game-type-label">โค่นอำนาจ (Coup)</span>
-                  </div>
-                </label>
-                <label className="game-type-option">
-                  <input 
-                    type="radio" 
-                    name="gameType" 
-                    value="uno" 
-                    checked={gameType === 'uno'}
-                    onChange={() => setGameType('uno')} 
-                  />
-                  <div className="game-type-card">
-                    <span className="game-type-icon">🎴</span>
-                    <span className="game-type-label">อูโน่ (UNO)</span>
-                  </div>
-                </label>
-                <label className="game-type-option">
-                  <input 
-                    type="radio" 
-                    name="gameType" 
-                    value="bang" 
-                    checked={gameType === 'bang'}
-                    onChange={() => setGameType('bang')} 
-                  />
-                  <div className="game-type-card">
-                    <span className="game-type-icon">🤠</span>
-                    <span className="game-type-label">นายอำเภอดวลปืน (BANG!)</span>
-                  </div>
-                </label>
-              </div>
+              <label className="form-label" htmlFor="game-select-input">เลือกเกมที่ต้องการเล่น (Select Game)</label>
+              <select 
+                id="game-select-input"
+                className="form-input" 
+                value={gameType}
+                onChange={(e) => setGameType(e.target.value)}
+                style={{ 
+                  background: 'rgba(22, 17, 13, 0.95)', 
+                  border: '1px solid rgba(255, 183, 3, 0.25)', 
+                  color: 'var(--text-primary)',
+                  fontSize: '0.95rem',
+                  padding: '12px 16px',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  width: '100%',
+                  outline: 'none'
+                }}
+              >
+                <option value="poker" style={{ background: '#221913', color: '#fff' }}>♣️ เท็กซัส โฮลเด็ม โป๊กเกอร์ (Texas Hold'em)</option>
+                <option value="checkers" style={{ background: '#221913', color: '#fff' }}>🏁 หมากฮอสไทย (Thai Checkers)</option>
+                <option value="coup" style={{ background: '#221913', color: '#fff' }}>👑 โค่นอำนาจ (Coup - Social Deduction)</option>
+                <option value="uno" style={{ background: '#221913', color: '#fff' }}>🎴 อูโน่ ไร้ความปรานี (UNO No Mercy)</option>
+                <option value="bang" style={{ background: '#221913', color: '#fff' }}>🤠 นายอำเภอดวลปืน (BANG! Cowboy)</option>
+              </select>
             </div>
             
             <button id="create-room-btn" type="submit" className="btn-primary">
