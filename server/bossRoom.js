@@ -151,8 +151,14 @@ export class BossRoom {
 
     this.gameState = 'PLAYING';
     this.boardIndex = 0;
-    this.turnIndex = 0;
-    this.bossPlayerId = active[0].id;
+    if (active.length > 0) {
+      const starter = active[Math.floor(Math.random() * active.length)];
+      this.turnIndex = this.players.findIndex(p => p.id === starter.id);
+      this.bossPlayerId = starter.id;
+    } else {
+      this.turnIndex = 0;
+      this.bossPlayerId = active[0]?.id || null;
+    }
     this.pendingAction = null;
     this.activeKinsmen = [];
     this.activeTravels = [];

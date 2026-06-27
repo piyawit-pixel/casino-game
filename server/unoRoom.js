@@ -165,7 +165,13 @@ export class UnoRoom {
     this.discardPile.push(firstCard);
 
     this.gameState = 'PLAYING';
-    this.turnIndex = 0;
+    const active = this.players.filter(p => !p.spectating);
+    if (active.length > 0) {
+      const starter = active[Math.floor(Math.random() * active.length)];
+      this.turnIndex = this.players.findIndex(p => p.id === starter.id);
+    } else {
+      this.turnIndex = 0;
+    }
     this.addMessage('System', `UNO Show 'Em No Mercy started! First card is ${firstCard.color} ${firstCard.type}.`);
   }
 
