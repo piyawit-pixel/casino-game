@@ -1,0 +1,160 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Colors */
+  --bg-app: radial-gradient(circle at 50% 50%, #151a24 0%, #0a0d14 100%);
+  --table-felt: radial-gradient(circle, #2a3c30 0%, #17241c 100%); /* Premium Emerald Dark Felt */
+  --table-border: #8b7355; /* Antique Gold */
+  --table-rim: #2c251e; /* Dark wood rim */
+  
+  --primary: #ffd700; /* Gold */
+  --primary-hover: #ffea70;
+  --accent: #ff4757; /* Neon Red for Hearts/Diamonds */
+  --accent-blue: #2ed573; /* Neon Green for positive status */
+  --accent-cyan: #1e90ff; /* Neon Blue for Clubs/Spades/Highlights */
+  
+  --bg-card: rgba(255, 255, 255, 0.08);
+  --bg-card-solid: #1e2530;
+  --border-card: rgba(255, 255, 255, 0.12);
+  --text-primary: #f8fafc;
+  --text-muted: #94a3b8;
+  
+  --shadow-glow: 0 0 15px rgba(255, 215, 0, 0.3);
+  --shadow-active: 0 0 20px rgba(46, 213, 115, 0.5);
+  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-app);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(30, 37, 48, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Animations */
+@keyframes dealCard {
+  from {
+    transform: translate(-50%, -50%) scale(0.2) rotate(360deg);
+    opacity: 0;
+  }
+  to {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes pulse-turn {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(46, 213, 115, 0.2);
+    border-color: rgba(46, 213, 115, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(46, 213, 115, 0.7);
+    border-color: rgba(46, 213, 115, 1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Animation utilities */
+.animate-deal {
+  animation: dealCard 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Card suits styling */
+.suit-red {
+  color: var(--accent);
+}
+
+.suit-black {
+  color: #ffffff;
+}
+
+/* Interactive elements */
+button {
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: var(--font-display);
+  font-weight: 600;
+  outline: none;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Input elements */
+input {
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+input:focus {
+  border-color: var(--primary);
+}

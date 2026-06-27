@@ -1,0 +1,213 @@
+import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { Room } from './room.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*', // Allow connections from any origin (development React client is on 5173)
+    methods: ['GET', 'POST']
+  }
+});
+
+const rooms = new Map(); // roomId -> Room instance
+
+// Helper to generate a unique room ID
+function generateRoomId() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let result = '';
+  for (let i = 0; i < 4; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  if (rooms.has(result)) {
+    return generateRoomId(); // Ensure uniqueness
+  }
+  return result;
+}
+
+// Function to broadcast room state to all players in the room
+function broadcastRoomState(roomId) {
+  const room = rooms.get(roomId);
+  if (!room) return;
+
+  room.players.forEach(p => {
+    // Only send the state if the player is connected
+    if (p.isOnline) {
+      io.to(p.id).emit('roomState', room.getClientState(p.id));
+    }
+  });
+}
+
+io.on('connection', (socket) => {
+  let currentRoomId = null;
+  let playerProfile = null;
+
+  console.log(`Socket connected: ${socket.id}`);
+
+  // Create a new room
+  socket.on('createRoom', ({ name }) => {
+    if (!name || name.trim() === '') {
+      socket.emit('errorMsg', 'Please enter a valid name.');
+      return;
+    }
+    const roomId = generateRoomId();
+    const room = new Room(roomId);
+    rooms.set(roomId, room);
+
+    const player = room.addPlayer(socket.id, name.trim());
+    currentRoomId = roomId;
+    playerProfile = player;
+
+    socket.join(roomId);
+    socket.emit('roomCreated', { roomId, player });
+    broadcastRoomState(roomId);
+    console.log(`Room created: ${roomId} by ${name}`);
+  });
+
+  // Join an existing room
+  socket.on('joinRoom', ({ roomId, name }) => {
+    if (!roomId || !name || name.trim() === '') {
+      socket.emit('errorMsg', 'Room ID and Name are required.');
+      return;
+    }
+
+    const cleanRoomId = roomId.toUpperCase().trim();
+    const room = rooms.get(cleanRoomId);
+
+    if (!room) {
+      socket.emit('errorMsg', 'Room not found.');
+      return;
+    }
+
+    try {
+      const player = room.addPlayer(socket.id, name.trim());
+      currentRoomId = cleanRoomId;
+      playerProfile = player;
+
+      socket.join(cleanRoomId);
+      socket.emit('roomJoined', { roomId: cleanRoomId, player });
+      broadcastRoomState(cleanRoomId);
+      console.log(`Player ${name} joined Room: ${cleanRoomId}`);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  // Start the game
+  socket.on('startGame', () => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
+
+    // Only host can start game
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player || !player.isHost) {
+      socket.emit('errorMsg', 'Only the host can start the game.');
+      return;
+    }
+
+    try {
+      room.startGame();
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  // Deal next hand
+  socket.on('startNextHand', () => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
+
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player || !player.isHost) {
+      socket.emit('errorMsg', 'Only the host can deal the next hand.');
+      return;
+    }
+
+    if (room.gameState !== 'SHOWDOWN') {
+      socket.emit('errorMsg', 'Cannot start next hand yet.');
+      return;
+    }
+
+    try {
+      room.startNewHand();
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  // Process a player action (Fold, Check, Call, Raise)
+  socket.on('playerAction', ({ action, amount }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
+
+    try {
+      room.processAction(socket.id, action, amount);
+      broadcastRoomState(currentRoomId);
+    } catch (err) {
+      socket.emit('errorMsg', err.message);
+    }
+  });
+
+  // Send a chat message
+  socket.on('sendMessage', (text) => {
+    if (!currentRoomId || !text || text.trim() === '') return;
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
+
+    const player = room.players.find(p => p.id === socket.id);
+    const senderName = player ? player.name : 'Spectator';
+
+    room.addMessage(senderName, text.trim());
+    broadcastRoomState(currentRoomId);
+  });
+
+  // Disconnect
+  socket.on('disconnect', () => {
+    if (currentRoomId) {
+      const room = rooms.get(currentRoomId);
+      if (room) {
+        room.removePlayer(socket.id);
+        
+        // If room is empty of all players (online/offline), clean it up after a delay
+        const anyPlayersLeft = room.players.some(p => p.isOnline);
+        if (!anyPlayersLeft) {
+          console.log(`Room ${currentRoomId} is empty. Cleaning up.`);
+          rooms.delete(currentRoomId);
+        } else {
+          broadcastRoomState(currentRoomId);
+        }
+      }
+    }
+    console.log(`Socket disconnected: ${socket.id}`);
+  });
+});
+
+// Serve client build in production
+const distPath = path.join(__dirname, '../client/dist');
+app.use(express.static(distPath));
+
+// Fallback to index.html for client side routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
+});
+
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, () => {
+  console.log(`Poker backend server running on port ${PORT}`);
+});
