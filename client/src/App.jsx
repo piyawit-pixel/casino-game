@@ -587,8 +587,8 @@ function App() {
     return (
       <div className="lobby-container">
         <div className="lobby-card glass">
-          <h1 className="lobby-title animate-float">♣ POKER FRIENDS ♠</h1>
-          <p className="lobby-subtitle">เล่นเท็กซัส โฮลเด็ม ออนไลน์กับเพื่อนได้ทันที</p>
+          <h1 className="lobby-title animate-float">🎲 TABLETOP FRIENDS 👑</h1>
+          <p className="lobby-subtitle">ห้องรวมบอร์ดเกมออนไลน์ เล่นสนุกกับกลุ่มเพื่อนแบบพรีเมียม</p>
 
           {errorMsg && <div style={{ color: 'var(--accent)', marginBottom: '16px', fontSize: '0.9rem', fontWeight: 'bold' }}>{errorMsg}</div>}
 
