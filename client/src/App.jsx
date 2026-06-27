@@ -141,6 +141,15 @@ function App() {
     }
   };
 
+  const handleLeaveRoom = () => {
+    if (socket) {
+      socket.emit('leaveRoom');
+      setJoined(false);
+      setRoomState(null);
+      setSelectedSquare(null);
+    }
+  };
+
   const handleStartGame = () => {
     if (socket) socket.emit('startGame');
   };
@@ -347,6 +356,24 @@ function App() {
               {copySuccess ? 'คัดลอกแล้ว!' : '📋 คัดลอกโค้ด'}
             </button>
           </div>
+
+          <button 
+            id="leave-room-btn" 
+            className="host-btn" 
+            onClick={handleLeaveRoom}
+            style={{ 
+              background: 'rgba(255, 71, 87, 0.15)', 
+              border: '1px solid rgba(255, 71, 87, 0.3)', 
+              color: '#ff4757', 
+              boxShadow: 'none',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              fontSize: '0.85rem'
+            }}
+          >
+            🚪 ออกจากห้อง
+          </button>
+
           <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
             สถานะ: <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{roomState.gameState}</span>
           </div>

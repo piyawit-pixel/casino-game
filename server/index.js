@@ -192,6 +192,28 @@ io.on('connection', (socket) => {
     broadcastRoomState(currentRoomId);
   });
 
+  // Leave a room
+  socket.on('leaveRoom', () => {
+    if (currentRoomId) {
+      const room = rooms.get(currentRoomId);
+      if (room) {
+        room.removePlayer(socket.id);
+        socket.leave(currentRoomId);
+        
+        // If room is empty of all players (online/offline), clean it up
+        const anyPlayersLeft = room.players.some(p => p.isOnline);
+        if (!anyPlayersLeft) {
+          console.log(`Room ${currentRoomId} is empty. Cleaning up.`);
+          rooms.delete(currentRoomId);
+        } else {
+          broadcastRoomState(currentRoomId);
+        }
+      }
+      currentRoomId = null;
+      playerProfile = null;
+    }
+  });
+
   // Disconnect
   socket.on('disconnect', () => {
     if (currentRoomId) {
