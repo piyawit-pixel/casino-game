@@ -155,9 +155,9 @@ export class CoupRoom {
     }
 
     this.gameState = 'PLAYING';
-    const active = this.players.filter(p => !p.spectating);
-    if (active.length > 0) {
-      const starter = active[Math.floor(Math.random() * active.length)];
+    const activePlayers = this.players.filter(p => !p.spectating);
+    if (activePlayers.length > 0) {
+      const starter = activePlayers[Math.floor(Math.random() * activePlayers.length)];
       this.turnIndex = this.players.findIndex(p => p.id === starter.id);
     } else {
       this.turnIndex = 0;
