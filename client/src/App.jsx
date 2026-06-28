@@ -1329,6 +1329,73 @@ function App() {
     );
   };
 
+  const renderActiveTurnBanner = () => {
+    if (!roomState || roomState.gameState === 'WAITING' || roomState.gameState === 'GAME_OVER') return null;
+
+    let activePlayerName = '';
+    let isMyTurn = false;
+
+    if (roomState.gameType === 'poker') {
+      const activeIdx = roomState.currentTurnIndex;
+      if (activeIdx !== null && activeIdx !== undefined && roomState.players[activeIdx]) {
+        activePlayerName = roomState.players[activeIdx].name;
+        isMyTurn = roomState.players[activeIdx].id === socket.id;
+      }
+    } else if (roomState.gameType === 'checkers') {
+      const activeColor = roomState.turn;
+      const player = roomState.players.find(p => p.color === activeColor);
+      if (player) {
+        activePlayerName = `${player.name} (${activeColor === 'red' ? 'สีแดง' : 'สีดำ'})`;
+        isMyTurn = player.id === socket.id;
+      }
+    } else {
+      // For coup, uno, boss, undercover, insider, bang
+      const activeIdx = roomState.turnIndex;
+      if (activeIdx !== null && activeIdx !== undefined && roomState.players[activeIdx]) {
+        activePlayerName = roomState.players[activeIdx].name;
+        isMyTurn = roomState.players[activeIdx].id === socket.id;
+      }
+    }
+
+    if (!activePlayerName) return null;
+
+    return (
+      <div 
+        className="active-turn-banner animate-pulse" 
+        style={{
+          background: isMyTurn 
+            ? 'linear-gradient(135deg, rgba(46, 213, 115, 0.2) 0%, rgba(46, 213, 115, 0.05) 100%)' 
+            : 'linear-gradient(135deg, rgba(255, 183, 3, 0.15) 0%, rgba(255, 183, 3, 0.02) 100%)',
+          border: isMyTurn ? '1px solid rgba(46, 213, 115, 0.35)' : '1px solid rgba(255, 183, 3, 0.2)',
+          borderRadius: '8px',
+          padding: '6px 12px',
+          margin: '0 auto 8px auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          maxWidth: '340px',
+          boxShadow: isMyTurn ? '0 0 12px rgba(46, 213, 115, 0.2)' : '0 0 8px rgba(255, 183, 3, 0.08)',
+          zIndex: 50,
+          position: 'relative'
+        }}
+      >
+        <span style={{ fontSize: '1rem' }}>{isMyTurn ? '⚡' : '👉'}</span>
+        <span 
+          style={{ 
+            fontSize: '0.8rem', 
+            fontWeight: '800', 
+            color: isMyTurn ? '#2ed573' : '#ffd32a', 
+            fontFamily: 'var(--font-display)',
+            letterSpacing: '0.5px'
+          }}
+        >
+          {isMyTurn ? 'ตาของคุณในการเล่น! (YOUR TURN)' : `ตาของ: ${activePlayerName}`}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div className={`game-layout ${chatCollapsed ? 'chat-collapsed' : ''} ${chatMaximized ? 'chat-maximized' : ''}`}>
       {errorMsg && (
@@ -1436,6 +1503,7 @@ function App() {
 
         {roomState.gameType === 'checkers' ? (
           <div className="table-container-wrapper">
+            {renderActiveTurnBanner()}
             {roomState.gameState === 'WAITING' ? (
               <div className="coup-center-prompt glass" style={{ width: '320px', padding: '16px', margin: '20px auto', zIndex: 10 }}>
                 {renderTableCenterLobby()}
@@ -1550,6 +1618,7 @@ function App() {
           <>
             {/* The Coup Table container */}
             <div className="table-container-wrapper">
+              {renderActiveTurnBanner()}
 <div className="poker-table-container">
               <div className="coup-table">
                 {/* Event banner */}
@@ -1674,6 +1743,7 @@ function App() {
           <>
             {/* The UNO Table container */}
             <div className="table-container-wrapper">
+              {renderActiveTurnBanner()}
 <div className="poker-table-container">
               <div className="uno-table" style={{ border: `15px solid #14171f`, borderColor: roomState.currentColor ? `var(--color-${roomState.currentColor}, #14171f)` : '#14171f' }}>
                 
@@ -1886,6 +1956,7 @@ function App() {
           <>
             {/* The Boss Table container */}
             <div className="table-container-wrapper">
+              {renderActiveTurnBanner()}
 <div className="poker-table-container">
               <div className="boss-table">
                 
@@ -2194,6 +2265,7 @@ function App() {
           <>
             {/* The Undercover Table container */}
             <div className="table-container-wrapper">
+              {renderActiveTurnBanner()}
 <div className="poker-table-container">
               <div className="undercover-table">
                 
@@ -2440,6 +2512,7 @@ function App() {
           <>
             {/* The Insider Table container */}
             <div className="table-container-wrapper">
+              {renderActiveTurnBanner()}
 <div className="poker-table-container">
               <div className="insider-table">
                 
@@ -2673,6 +2746,7 @@ function App() {
           <>
             {/* The BANG! Table container */}
             <div className="table-container-wrapper">
+              {renderActiveTurnBanner()}
 <div className="poker-table-container">
               <div className="bang-table">
                 
@@ -2987,6 +3061,7 @@ function App() {
           <>
             {/* The Poker Table container */}
             <div className="table-container-wrapper">
+              {renderActiveTurnBanner()}
 <div className="poker-table-container">
               <div className="poker-table">
                 {roomState.gameState === 'WAITING' ? (
