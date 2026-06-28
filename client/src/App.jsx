@@ -256,6 +256,8 @@ function App() {
   const [authError, setAuthError] = useState('');
   const [lobbyTab, setLobbyTab] = useState('auth'); // 'auth' | 'guest'
   const [roomIdInput, setRoomIdInput] = useState('');
+  const [roomPassword, setRoomPassword] = useState('');
+  const [joinPassword, setJoinPassword] = useState('');
   const [name, setName] = useState('');
   const [joined, setJoined] = useState(false);
   const [roomState, setRoomState] = useState(null);
@@ -525,7 +527,7 @@ function App() {
   const handleCreateRoom = (e) => {
     e.preventDefault();
     if (socket && name.trim()) {
-      socket.emit('createRoom', { name, gameType });
+      socket.emit('createRoom', { name, gameType, password: roomPassword });
     } else {
       setErrorMsg('Please enter your name.');
     }
@@ -534,7 +536,7 @@ function App() {
   const handleJoinRoom = (e) => {
     e.preventDefault();
     if (socket && name.trim() && roomIdInput.trim()) {
-      socket.emit('joinRoom', { roomId: roomIdInput, name });
+      socket.emit('joinRoom', { roomId: roomIdInput, name, password: joinPassword });
     } else {
       setErrorMsg('Please enter your name and Room ID.');
     }
@@ -546,6 +548,8 @@ function App() {
       setJoined(false);
       setRoomState(null);
       setSelectedSquare(null);
+      setRoomPassword('');
+      setJoinPassword('');
     }
   };
 
@@ -1178,6 +1182,18 @@ function App() {
                   </div>
                 )}
                 
+                <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <label className="form-label">รหัสผ่านห้อง (Room Password - ไม่ใส่ก็ได้)</label>
+                  <input 
+                    type="password" 
+                    className="form-input" 
+                    placeholder="ปล่อยว่างหากต้องการให้ห้องเป็นสาธารณะ" 
+                    value={roomPassword} 
+                    onChange={(e) => setRoomPassword(e.target.value)} 
+                    maxLength={16}
+                  />
+                </div>
+                
                 <button id="create-room-btn" type="submit" className="btn-primary">
                   สร้างห้องใหม่ (Create Room)
                 </button>
@@ -1196,6 +1212,18 @@ function App() {
                     value={roomIdInput} 
                     onChange={(e) => setRoomIdInput(e.target.value.toUpperCase())} 
                     maxLength={4}
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <label className="form-label">รหัสผ่านเข้าห้อง (Room Password - ถ้าห้องมีรหัส)</label>
+                  <input 
+                    type="password" 
+                    className="form-input" 
+                    placeholder="ปล่อยว่างหากเป็นห้องสาธารณะ" 
+                    value={joinPassword} 
+                    onChange={(e) => setJoinPassword(e.target.value)} 
+                    maxLength={16}
                   />
                 </div>
                 

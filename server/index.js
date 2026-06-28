@@ -128,7 +128,7 @@ io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id} (Authenticated: ${socket.username || 'No'})`);
 
   // Create a new room
-  socket.on('createRoom', async ({ name, gameType }) => {
+  socket.on('createRoom', async ({ name, gameType, password }) => {
     let playerName = name ? name.trim() : '';
     if (socket.username) {
       playerName = socket.username;
@@ -140,6 +140,12 @@ io.on('connection', (socket) => {
     }
     const roomId = generateRoomId();
     const room = gameType === 'checkers' ? new CheckersRoom(roomId) : gameType === 'coup' ? new CoupRoom(roomId) : gameType === 'uno' ? new UnoRoom(roomId) : gameType === 'bang' ? new BangRoom(roomId) : gameType === 'insider' ? new InsiderRoom(roomId) : gameType === 'undercover' ? new UndercoverRoom(roomId) : gameType === 'boss' ? new BossRoom(roomId) : new Room(roomId);
+    
+    // Save password if set
+    if (password && password.trim() !== '') {
+      room.password = password.trim();
+    }
+
     rooms.set(roomId, room);
 
     let initialChips = 1000;
@@ -154,11 +160,11 @@ io.on('connection', (socket) => {
     socket.join(roomId);
     socket.emit('roomCreated', { roomId, player });
     await broadcastRoomState(roomId);
-    console.log(`Room created: ${roomId} by ${playerName}`);
+    console.log(`Room created: ${roomId} by ${playerName} (Password protected: ${!!room.password})`);
   });
 
   // Join an existing room
-  socket.on('joinRoom', async ({ roomId, name }) => {
+  socket.on('joinRoom', async ({ roomId, name, password }) => {
     let playerName = name ? name.trim() : '';
     if (socket.username) {
       playerName = socket.username;
@@ -175,6 +181,15 @@ io.on('connection', (socket) => {
     if (!room) {
       socket.emit('errorMsg', 'Room not found.');
       return;
+    }
+
+    // Verify Password if required by the room
+    if (room.password && room.password !== '') {
+      const trimmedInput = password ? password.trim() : '';
+      if (trimmedInput !== room.password) {
+        socket.emit('errorMsg', 'รหัสผ่านห้องไม่ถูกต้อง (Incorrect room password)');
+        return;
+      }
     }
 
     try {
