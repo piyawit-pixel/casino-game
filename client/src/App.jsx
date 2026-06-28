@@ -241,6 +241,7 @@ function App() {
   const [chatCollapsed, setChatCollapsed] = useState(false);
   const [chatMaximized, setChatMaximized] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
+  const [showCustomizerModal, setShowCustomizerModal] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('user_token') || null);
   const [userProfile, setUserProfile] = useState(null); // { username, chips }
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
@@ -1265,160 +1266,14 @@ function App() {
     const myPlayer = roomState.players.find(p => p.id === socket.id);
     const isHost = myPlayer?.isHost;
 
-    const cachedAvatar = localStorage.getItem('profile_avatar') || '';
-    const cachedFrame = localStorage.getItem('profile_frame') || 'default';
-
-    const emojis = ['🦊', '🐱', '🦁', '🕵️', '🤠', '😈', '🤡', '👽', '🐼', '🤖', '💀', '🧙', '🦖', '🦄'];
-    const frames = [
-      { value: 'default', label: 'ปกติ' },
-      { value: 'neon-pink', label: '💖 ชมพู' },
-      { value: 'neon-green', label: '💚 เขียว' },
-      { value: 'cyber-blue', label: '💙 ฟ้า' },
-      { value: 'gold-elite', label: '👑 ทอง' },
-      { value: 'rainbow', label: '🌈 รุ้ง' }
-    ];
-
-    const currentAvatar = myPlayer?.avatar || cachedAvatar;
-    const currentFrame = myPlayer?.frame || cachedFrame;
-
-    const updateProfile = (avatar, frame) => {
-      if (avatar) localStorage.setItem('profile_avatar', avatar);
-      else localStorage.removeItem('profile_avatar');
-      localStorage.setItem('profile_frame', frame);
-      
-      handleUpdateProfile(avatar, frame);
-    };
-
     return (
-      <div className="lobby-table-center-panel" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', width: '100%' }}>
+      <div className="lobby-table-center-panel" style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', width: '100%' }}>
         <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--primary)', fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          🎨 แต่งโปรไฟล์ตัวละครของคุณ
+          🎲 ห้องเตรียมตัว (Lobby)
         </span>
         
-        {/* Avatar Selection */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', width: '100%', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>เลือกอวตาร์อิโมจิ:</span>
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '280px' }}>
-            <button 
-              onClick={() => updateProfile(null, currentFrame)}
-              style={{
-                background: (!currentAvatar) ? 'var(--primary)' : 'rgba(0,0,0,0.2)',
-                color: '#fff',
-                border: '1px solid rgba(255,255,255,0.08)',
-                padding: '4px 6px',
-                borderRadius: '6px',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
-            >
-              ชื่อย่อ
-            </button>
-            {emojis.map(emoji => (
-              <button 
-                key={emoji}
-                onClick={() => updateProfile(emoji, currentFrame)}
-                style={{
-                  background: (currentAvatar === emoji) ? 'var(--primary)' : 'rgba(0,0,0,0.2)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  padding: '4px 6px',
-                  borderRadius: '6px',
-                  fontSize: '0.75rem',
-                  cursor: 'pointer'
-                }}
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Frame Selection */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', width: '100%', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>เลือกกรอบโปรไฟล์:</span>
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '280px' }}>
-            {frames.map(f => (
-              <button 
-                key={f.value}
-                onClick={() => updateProfile(currentAvatar, f.value)}
-                style={{
-                  background: (currentFrame === f.value) ? 'var(--primary)' : 'rgba(0,0,0,0.2)',
-                  color: (currentFrame === f.value) ? '#fff' : '#b2bec3',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  padding: '3px 6px',
-                  borderRadius: '6px',
-                  fontSize: '0.7rem',
-                  cursor: 'pointer',
-                  fontWeight: 'bold'
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Integrated Slots Panel */}
-        <div className="center-slots-panel" style={{ marginTop: '6px', padding: '8px 10px', width: '100%', maxWidth: '280px', background: 'rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px' }}>
-          <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--primary)', textAlign: 'center', marginBottom: '6px' }}>
-            🎰 มินิสล็อตชิงรางวัล (Lobby Slots)
-          </div>
-          
-          <div className="slots-reels" style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '6px' }}>
-            {slotReels.map((symbol, idx) => (
-              <div 
-                key={idx} 
-                className={`slots-reel ${slotSpinning ? 'spinning' : ''}`}
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  fontSize: '1.2rem',
-                  background: 'rgba(0,0,0,0.4)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)'
-                }}
-              >
-                {slotSpinning ? ['🍒', '🍋', '7️⃣', '💎'][Math.floor(Math.random() * 4)] : symbol}
-              </div>
-            ))}
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', alignItems: 'center' }}>
-            <select 
-              value={slotBet} 
-              onChange={(e) => setSlotBet(Number(e.target.value))}
-              disabled={slotSpinning}
-              style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', fontSize: '0.65rem', borderRadius: '4px', padding: '1px 3px' }}
-            >
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-              <option value={200}>200</option>
-              <option value={500}>500</option>
-            </select>
-
-            <button 
-              className="btn-primary"
-              onClick={() => socket.emit('lobbySpinSlots', { bet: slotBet })}
-              disabled={slotSpinning || (myPlayer?.chips && myPlayer.chips < slotBet)}
-              style={{ width: 'auto', margin: 0, padding: '3px 8px', fontSize: '0.65rem', borderRadius: '4px', background: 'var(--primary)', color: '#fff' }}
-            >
-              {slotSpinning ? 'SPIN...' : 'SPIN 🎰'}
-            </button>
-          </div>
-
-          {slotWinMessage && (
-            <div style={{ fontSize: '0.65rem', fontWeight: 'bold', color: slotWinMessage.includes('ชนะ') ? '#2ed573' : '#ff4757', marginTop: '4px', textAlign: 'center' }}>
-              {slotWinMessage}
-            </div>
-          )}
-        </div>
-
         {/* Start Game Action */}
-        <div style={{ marginTop: '8px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ marginTop: '4px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
           {isHost ? (
             <button 
               className="btn-primary" 
@@ -1427,21 +1282,48 @@ function App() {
                 background: 'linear-gradient(135deg, #f1c40f, #f39c12)',
                 color: '#2c3e50',
                 border: 'none',
-                padding: '6px 20px',
+                padding: '8px 24px',
                 borderRadius: '8px',
-                fontSize: '0.8rem',
+                fontSize: '0.85rem',
                 fontWeight: '800',
                 boxShadow: '0 4px 10px rgba(243, 156, 18, 0.3)',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                width: 'auto',
+                margin: 0
               }}
             >
               🚀 เริ่มบอร์ดเกม (Start Game)
             </button>
           ) : (
-            <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontStyle: 'italic', fontWeight: 'bold' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontStyle: 'italic', fontWeight: 'bold' }}>
               ⏳ รอโฮสต์กดเริ่มเกม...
             </span>
           )}
+
+          <button 
+            type="button"
+            className="btn-secondary"
+            onClick={() => setShowCustomizerModal(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              fontSize: '0.75rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              color: '#2ed573',
+              fontWeight: 'bold',
+              transition: 'all 0.2s',
+              width: 'auto',
+              margin: 0
+            }}
+          >
+            🎨 แต่งตัวละคร & เล่นสล็อต
+          </button>
         </div>
       </div>
     );
@@ -3472,6 +3354,182 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Lobby Customizer Modal */}
+      {showCustomizerModal && (() => {
+        const myPlayer = roomState?.players?.find(p => p.id === socket?.id);
+        const cachedAvatar = localStorage.getItem('profile_avatar') || '';
+        const cachedFrame = localStorage.getItem('profile_frame') || 'default';
+
+        const emojis = ['🦊', '🐱', '🦁', '🕵️', '🤠', '😈', '🤡', '👽', '🐼', '🤖', '💀', '🧙', '🦖', '🦄'];
+        const frames = [
+          { value: 'default', label: 'ปกติ' },
+          { value: 'neon-pink', label: '💖 ชมพู' },
+          { value: 'neon-green', label: '💚 เขียว' },
+          { value: 'cyber-blue', label: '💙 ฟ้า' },
+          { value: 'gold-elite', label: '👑 ทอง' },
+          { value: 'rainbow', label: '🌈 รุ้ง' }
+        ];
+
+        const currentAvatar = myPlayer?.avatar || cachedAvatar;
+        const currentFrame = myPlayer?.frame || cachedFrame;
+
+        const updateProfile = (avatar, frame) => {
+          if (avatar) localStorage.setItem('profile_avatar', avatar);
+          else localStorage.removeItem('profile_avatar');
+          localStorage.setItem('profile_frame', frame);
+          
+          handleUpdateProfile(avatar, frame);
+        };
+
+        return (
+          <div className="modal-overlay" style={{ zIndex: 120 }}>
+            <div className="modal-content glass" style={{ maxWidth: '360px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '10px' }}>
+                <span style={{ fontSize: '1.05rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                  🎨 แต่งตัวละคร & เล่นสล็อต
+                </span>
+                <button 
+                  onClick={() => setShowCustomizerModal(false)}
+                  style={{ background: 'none', border: 'none', color: '#ff4757', fontSize: '1.2rem', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Avatar Selection */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>เลือกอวตาร์อิโมจิ:</span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '280px' }}>
+                  <button 
+                    onClick={() => updateProfile(null, currentFrame)}
+                    style={{
+                      background: (!currentAvatar) ? 'var(--primary)' : 'rgba(0,0,0,0.2)',
+                      color: '#fff',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    ชื่อย่อ
+                  </button>
+                  {emojis.map(emoji => (
+                    <button 
+                      key={emoji}
+                      onClick={() => updateProfile(emoji, currentFrame)}
+                      style={{
+                        background: (currentAvatar === emoji) ? 'var(--primary)' : 'rgba(0,0,0,0.2)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Frame Selection */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>เลือกกรอบโปรไฟล์:</span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '280px' }}>
+                  {frames.map(f => (
+                    <button 
+                      key={f.value}
+                      onClick={() => updateProfile(currentAvatar, f.value)}
+                      style={{
+                        background: (currentFrame === f.value) ? 'var(--primary)' : 'rgba(0,0,0,0.2)',
+                        color: (currentFrame === f.value) ? '#fff' : '#b2bec3',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Integrated Slots Panel */}
+              <div className="center-slots-panel" style={{ width: '100%', maxWidth: '280px', padding: '10px', background: 'rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--primary)', textAlign: 'center', marginBottom: '6px' }}>
+                  🎰 มินิสล็อตชิงรางวัล (Lobby Slots)
+                </div>
+                
+                <div className="slots-reels" style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+                  {slotReels.map((symbol, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`slots-reel ${slotSpinning ? 'spinning' : ''}`}
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        fontSize: '1.4rem',
+                        background: 'rgba(0,0,0,0.4)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)'
+                      }}
+                    >
+                      {slotSpinning ? ['🍒', '🍋', '7️⃣', '💎'][Math.floor(Math.random() * 4)] : symbol}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center' }}>
+                  <select 
+                    value={slotBet} 
+                    onChange={(e) => setSlotBet(Number(e.target.value))}
+                    disabled={slotSpinning}
+                    style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', fontSize: '0.75rem', borderRadius: '4px', padding: '2px 4px' }}
+                  >
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={200}>200</option>
+                    <option value={500}>500</option>
+                  </select>
+
+                  <button 
+                    className="btn-primary"
+                    onClick={() => socket.emit('lobbySpinSlots', { bet: slotBet })}
+                    disabled={slotSpinning || (myPlayer?.chips && myPlayer.chips < slotBet)}
+                    style={{ width: 'auto', margin: 0, padding: '4px 12px', fontSize: '0.75rem', borderRadius: '6px', background: 'var(--primary)', color: '#fff' }}
+                  >
+                    {slotSpinning ? 'SPIN...' : 'SPIN 🎰'}
+                  </button>
+                </div>
+
+                {slotWinMessage && (
+                  <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: slotWinMessage.includes('ชนะ') ? '#2ed573' : '#ff4757', marginTop: '6px', textAlign: 'center' }}>
+                    {slotWinMessage}
+                  </div>
+                )}
+              </div>
+
+              <button 
+                className="btn-primary" 
+                onClick={() => setShowCustomizerModal(false)}
+                style={{ margin: 0, width: '100%', marginTop: '6px' }}
+              >
+                เสร็จสิ้น
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Showdown Results Modal (Pop up when round is SHOWDOWN) */}
       {roomState.gameState === 'SHOWDOWN' && roomState.showdownResults && roomState.showdownResults.length > 0 && (
