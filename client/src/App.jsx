@@ -222,10 +222,12 @@ const translateActionType = (type) => {
 };
 
 function renderPlayerAvatar(player, isDealer = false) {
+  if (!player) return null;
+  const frameClass = player.frame && player.frame !== 'default' ? `frame-${player.frame}` : '';
   return (
-    <div className="player-avatar-wrapper">
+    <div className={`player-avatar-wrapper ${frameClass}`}>
       <div className="player-avatar">
-        {player.name.substring(0, 2).toUpperCase()}
+        {player.avatar || player.name.substring(0, 2).toUpperCase()}
       </div>
       {isDealer && <div className="player-dealer-btn">D</div>}
     </div>
@@ -237,6 +239,7 @@ function App() {
   const socketRef = useRef(null);
   const socket = socketRef.current || stateSocket;
   const [chatCollapsed, setChatCollapsed] = useState(false);
+  const [chatMaximized, setChatMaximized] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('user_token') || null);
   const [userProfile, setUserProfile] = useState(null); // { username, chips }
@@ -389,6 +392,17 @@ function App() {
 
       setRoomState(state);
       
+      // Auto-sync customized profile from localStorage to server room state
+      const myPlayerInState = state.players.find(p => p.id === newSocket.id);
+      if (myPlayerInState) {
+        const cachedAvatar = localStorage.getItem('profile_avatar');
+        const cachedFrame = localStorage.getItem('profile_frame') || 'default';
+        if (cachedAvatar && (myPlayerInState.avatar !== cachedAvatar || myPlayerInState.frame !== cachedFrame)) {
+          console.log('Auto-syncing profile from localStorage:', { cachedAvatar, cachedFrame });
+          newSocket.emit('updateProfile', { avatar: cachedAvatar, frame: cachedFrame });
+        }
+      }
+      
       // Auto-set the initial raise slider value when turn updates (poker-only)
       if (state.gameType !== 'checkers') {
         const myPlayer = state.players.find(p => p.id === newSocket.id);
@@ -458,27 +472,41 @@ function App() {
     };
   }, [token]);
 
-  // Scroll chat to bottom on new messages and when chat tab expands/opens
+  // Scroll chat to bottom on new messages and when chat tab expands/opens/maximizes
+  const lastMessageCount = useRef(0);
   useEffect(() => {
-    const scrollToBottom = () => {
-      if (chatMessagesRef.current) {
-        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
-      }
-    };
+    const container = chatMessagesRef.current;
+    if (!container) return;
 
-    // Scroll immediately
-    scrollToBottom();
+    const currentMsgCount = roomState?.messages?.length || 0;
+    const isNewMessage = currentMsgCount > lastMessageCount.current;
+    lastMessageCount.current = currentMsgCount;
 
-    // Scroll cascade during CSS transition to bottom of newly expanded height
-    const timers = [
-      setTimeout(scrollToBottom, 50),
-      setTimeout(scrollToBottom, 150),
-      setTimeout(scrollToBottom, 300),
-      setTimeout(scrollToBottom, 450)
-    ];
+    // Calculate if we were already scrolled close to the bottom (within 150px)
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
 
-    return () => timers.forEach(clearTimeout);
-  }, [roomState?.messages?.length, chatCollapsed]);
+    // If chat was just toggled (collapsed or maximized changed), or we got a new message and were near bottom, scroll down.
+    if (!chatCollapsed && (isNearBottom || !isNewMessage)) {
+      const scrollToBottom = () => {
+        if (chatMessagesRef.current) {
+          chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+        }
+      };
+
+      // Scroll immediately
+      scrollToBottom();
+
+      // Scroll cascade during CSS transition
+      const timers = [
+        setTimeout(scrollToBottom, 50),
+        setTimeout(scrollToBottom, 150),
+        setTimeout(scrollToBottom, 300),
+        setTimeout(scrollToBottom, 450)
+      ];
+
+      return () => timers.forEach(clearTimeout);
+    }
+  }, [roomState?.messages?.length, chatCollapsed, chatMaximized]);
 
   // Scroll insider guesses to bottom when a new guess is added
   useEffect(() => {
@@ -1231,8 +1259,196 @@ function App() {
   // Can raise only if we have more chips than the call amount and we can match the minRaise
   const canRaise = isMyTurn && myPlayer && myPlayer.chips > callAmountNeeded && maxTotalBet >= roomState.minRaise;
 
+  const renderTableCenterLobby = () => {
+    if (!roomState || roomState.gameState !== 'WAITING') return null;
+
+    const myPlayer = roomState.players.find(p => p.id === socket.id);
+    const isHost = myPlayer?.isHost;
+
+    const cachedAvatar = localStorage.getItem('profile_avatar') || '';
+    const cachedFrame = localStorage.getItem('profile_frame') || 'default';
+
+    const emojis = ['🦊', '🐱', '🦁', '🕵️', '🤠', '😈', '🤡', '👽', '🐼', '🤖', '💀', '🧙', '🦖', '🦄'];
+    const frames = [
+      { value: 'default', label: 'ปกติ' },
+      { value: 'neon-pink', label: '💖 ชมพู' },
+      { value: 'neon-green', label: '💚 เขียว' },
+      { value: 'cyber-blue', label: '💙 ฟ้า' },
+      { value: 'gold-elite', label: '👑 ทอง' },
+      { value: 'rainbow', label: '🌈 รุ้ง' }
+    ];
+
+    const currentAvatar = myPlayer?.avatar || cachedAvatar;
+    const currentFrame = myPlayer?.frame || cachedFrame;
+
+    const updateProfile = (avatar, frame) => {
+      if (avatar) localStorage.setItem('profile_avatar', avatar);
+      else localStorage.removeItem('profile_avatar');
+      localStorage.setItem('profile_frame', frame);
+      
+      handleUpdateProfile(avatar, frame);
+    };
+
+    return (
+      <div className="lobby-table-center-panel" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', width: '100%' }}>
+        <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--primary)', fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          🎨 แต่งโปรไฟล์ตัวละครของคุณ
+        </span>
+        
+        {/* Avatar Selection */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', width: '100%', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>เลือกอวตาร์อิโมจิ:</span>
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '280px' }}>
+            <button 
+              onClick={() => updateProfile(null, currentFrame)}
+              style={{
+                background: (!currentAvatar) ? 'var(--primary)' : 'rgba(0,0,0,0.2)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.08)',
+                padding: '4px 6px',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              ชื่อย่อ
+            </button>
+            {emojis.map(emoji => (
+              <button 
+                key={emoji}
+                onClick={() => updateProfile(emoji, currentFrame)}
+                style={{
+                  background: (currentAvatar === emoji) ? 'var(--primary)' : 'rgba(0,0,0,0.2)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  padding: '4px 6px',
+                  borderRadius: '6px',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer'
+                }}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Frame Selection */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', width: '100%', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>เลือกกรอบโปรไฟล์:</span>
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '280px' }}>
+            {frames.map(f => (
+              <button 
+                key={f.value}
+                onClick={() => updateProfile(currentAvatar, f.value)}
+                style={{
+                  background: (currentFrame === f.value) ? 'var(--primary)' : 'rgba(0,0,0,0.2)',
+                  color: (currentFrame === f.value) ? '#fff' : '#b2bec3',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  padding: '3px 6px',
+                  borderRadius: '6px',
+                  fontSize: '0.7rem',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Integrated Slots Panel */}
+        <div className="center-slots-panel" style={{ marginTop: '6px', padding: '8px 10px', width: '100%', maxWidth: '280px', background: 'rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--primary)', textAlign: 'center', marginBottom: '6px' }}>
+            🎰 มินิสล็อตชิงรางวัล (Lobby Slots)
+          </div>
+          
+          <div className="slots-reels" style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '6px' }}>
+            {slotReels.map((symbol, idx) => (
+              <div 
+                key={idx} 
+                className={`slots-reel ${slotSpinning ? 'spinning' : ''}`}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  fontSize: '1.2rem',
+                  background: 'rgba(0,0,0,0.4)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)'
+                }}
+              >
+                {slotSpinning ? ['🍒', '🍋', '7️⃣', '💎'][Math.floor(Math.random() * 4)] : symbol}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', alignItems: 'center' }}>
+            <select 
+              value={slotBet} 
+              onChange={(e) => setSlotBet(Number(e.target.value))}
+              disabled={slotSpinning}
+              style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', fontSize: '0.65rem', borderRadius: '4px', padding: '1px 3px' }}
+            >
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={200}>200</option>
+              <option value={500}>500</option>
+            </select>
+
+            <button 
+              className="btn-primary"
+              onClick={() => socket.emit('lobbySpinSlots', { bet: slotBet })}
+              disabled={slotSpinning || (myPlayer?.chips && myPlayer.chips < slotBet)}
+              style={{ width: 'auto', margin: 0, padding: '3px 8px', fontSize: '0.65rem', borderRadius: '4px', background: 'var(--primary)', color: '#fff' }}
+            >
+              {slotSpinning ? 'SPIN...' : 'SPIN 🎰'}
+            </button>
+          </div>
+
+          {slotWinMessage && (
+            <div style={{ fontSize: '0.65rem', fontWeight: 'bold', color: slotWinMessage.includes('ชนะ') ? '#2ed573' : '#ff4757', marginTop: '4px', textAlign: 'center' }}>
+              {slotWinMessage}
+            </div>
+          )}
+        </div>
+
+        {/* Start Game Action */}
+        <div style={{ marginTop: '8px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {isHost ? (
+            <button 
+              className="btn-primary" 
+              onClick={handleStartGame}
+              style={{ 
+                background: 'linear-gradient(135deg, #f1c40f, #f39c12)',
+                color: '#2c3e50',
+                border: 'none',
+                padding: '6px 20px',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                fontWeight: '800',
+                boxShadow: '0 4px 10px rgba(243, 156, 18, 0.3)',
+                cursor: 'pointer'
+              }}
+            >
+              🚀 เริ่มบอร์ดเกม (Start Game)
+            </button>
+          ) : (
+            <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontStyle: 'italic', fontWeight: 'bold' }}>
+              ⏳ รอโฮสต์กดเริ่มเกม...
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className={`game-layout ${chatCollapsed ? 'chat-collapsed' : ''}`}>
+    <div className={`game-layout ${chatCollapsed ? 'chat-collapsed' : ''} ${chatMaximized ? 'chat-maximized' : ''}`}>
       {errorMsg && (
         <div style={{
           position: 'fixed',
@@ -1443,13 +1659,8 @@ function App() {
             )}
             
             {roomState.gameState === 'WAITING' && (
-              <div style={{ textAlign: 'center', marginTop: '10px' }}>
-                <h3 style={{ color: 'var(--text-muted)' }}>รอคู่แข่งเตรียมตัว...</h3>
-                {isHost && (
-                  <button id="start-game-btn" className="host-btn" style={{ marginTop: '12px' }} onClick={handleStartGame}>
-                    เริ่มบอร์ดเกม (Start Game)
-                  </button>
-                )}
+              <div className="coup-center-prompt glass" style={{ width: '320px', padding: '16px', margin: '20px auto', textAlign: 'center' }}>
+                {renderTableCenterLobby()}
               </div>
             )}
           </div>
@@ -1468,19 +1679,23 @@ function App() {
                 )}
 
                 {/* Center status prompt card */}
-                <div className="coup-center-prompt glass">
-                  <span className="coup-prompt-title">
-                    {roomState.gameState === 'PLAYING' ? 'กำลังเล่น (Playing)' : 
-                     roomState.gameState === 'ACTION_PENDING' ? 'รอยืนยันแอคชัน' :
-                     roomState.gameState === 'CHALLENGE_RESOLVING' ? 'จับโกหก (Challenge)' :
-                     roomState.gameState === 'BLOCK_CHALLENGE_RESOLVING' ? 'จับโกหกการขัดขวาง' :
-                     roomState.gameState === 'DISCARDING' ? 'เลือกทิ้งการ์ด' :
-                     roomState.gameState === 'EXCHANGING' ? 'เอกอัครราชทูตแลกเปลี่ยน' :
-                     roomState.gameState === 'GAME_OVER' ? 'จบการแข่งขัน' : ''}
-                  </span>
-
-                  {/* Sub status descriptions */}
-                  {renderCoupCenterPrompt()}
+                <div className="coup-center-prompt glass" style={roomState.gameState === 'WAITING' ? { width: '320px', padding: '16px' } : {}}>
+                  {roomState.gameState === 'WAITING' ? (
+                    renderTableCenterLobby()
+                  ) : (
+                    <>
+                      <span className="coup-prompt-title">
+                        {roomState.gameState === 'PLAYING' ? 'กำลังเล่น (Playing)' : 
+                         roomState.gameState === 'ACTION_PENDING' ? 'รอยืนยันแอคชัน' :
+                         roomState.gameState === 'CHALLENGE_RESOLVING' ? 'จับโกหก (Challenge)' :
+                         roomState.gameState === 'BLOCK_CHALLENGE_RESOLVING' ? 'จับโกหกการขัดขวาง' :
+                         roomState.gameState === 'DISCARDING' ? 'เลือกทิ้งการ์ด' :
+                         roomState.gameState === 'EXCHANGING' ? 'เอกอัครราชทูตแลกเปลี่ยน' :
+                         roomState.gameState === 'GAME_OVER' ? 'จบการแข่งขัน' : ''}
+                      </span>
+                      {renderCoupCenterPrompt()}
+                    </>
+                  )}
                 </div>
 
                 {/* Render circular players */}
@@ -1659,6 +1874,13 @@ function App() {
                   )}
                 </div>
 
+                {/* Uno Lobby Wait Popup */}
+                {roomState.gameState === 'WAITING' && (
+                  <div className="coup-center-prompt glass" style={{ width: '320px', padding: '16px', zIndex: 100 }}>
+                    {renderTableCenterLobby()}
+                  </div>
+                )}
+
                 {/* Uno Game Over Popup */}
                 {roomState.gameState === 'GAME_OVER' && (
                   <div className="color-select-popup" style={{ width: '310px', zIndex: 100 }}>
@@ -1792,97 +2014,103 @@ function App() {
                 )}
 
                 {/* Center Deal Info Card */}
-                <div className="coup-center-prompt glass" style={{ width: '330px', padding: '14px' }}>
-                  <span className="coup-prompt-title">💼 {roomState.currentDeal?.name}</span>
-                  
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '4px 0' }}>
-                    มูลค่าดีล: <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{roomState.currentDeal?.shares} หุ้น</span> 
-                    (เทิร์นดีลที่ {roomState.boardIndex + 1}/10)
-                  </div>
-
-                  {/* Required Investors */}
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ต้องการหุ้นส่วน:</span>
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      {roomState.currentDeal?.needs.map(letter => {
-                        const isKinsmanPresent = roomState.activeKinsmen.includes(letter);
-                        const isBlocked = roomState.activeTravels.includes(letter);
-                        
-                        let dotClass = `boss-investor-dot investor-${letter}`;
-                        if (isBlocked) dotClass += ' travel-blocked';
-                        
-                        return (
-                          <div key={letter} className={dotClass} style={{ position: 'relative' }}>
-                            {letter}
-                            {isKinsmanPresent && !isBlocked && (
-                              <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', fontSize: '0.5rem' }}>👶</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Active Travels or Kinsmen logs */}
-                  {(roomState.activeKinsmen.length > 0 || roomState.activeTravels.length > 0) && (
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '2px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px' }}>
-                      {roomState.activeKinsmen.length > 0 && <span>👶 เล่นลูกหลานแทนแล้ว: {roomState.activeKinsmen.join(', ')}</span>}
-                      {roomState.activeTravels.length > 0 && <span style={{ color: '#ff4757' }}>✈️ ส่งไปเที่ยว/ระงับสิทธิ์: {roomState.activeTravels.join(', ')}</span>}
-                    </div>
-                  )}
-
-                  {/* Countdown Reaction Alert */}
-                  {roomState.gameState === 'INTERRUPTED' && roomState.pendingAction && (
-                    <div style={{ background: 'rgba(255, 71, 87, 0.15)', border: '1px solid rgba(255, 71, 87, 0.3)', borderRadius: '8px', padding: '8px', marginTop: '10px' }}>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 'bold' }}>
-                        ⏳ เวลาต่อต้านโต้กลับ: {roomState.pendingAction.timerSeconds} วินาที!
+                <div className="coup-center-prompt glass" style={roomState.gameState === 'WAITING' ? { width: '320px', padding: '16px' } : { width: '330px', padding: '14px' }}>
+                  {roomState.gameState === 'WAITING' ? (
+                    renderTableCenterLobby()
+                  ) : (
+                    <>
+                      <span className="coup-prompt-title">💼 {roomState.currentDeal?.name}</span>
+                      
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '4px 0' }}>
+                        มูลค่าดีล: <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{roomState.currentDeal?.shares} หุ้น</span> 
+                        (เทิร์นดีลที่ {roomState.boardIndex + 1}/10)
                       </div>
-                      <div style={{ fontSize: '0.7rem', marginTop: '2px' }}>
-                        <b>{roomState.pendingAction.initiatorName}</b> เล่นการ์ด{' '}
-                        <span style={{ color: 'var(--primary)' }}>
-                          {roomState.pendingAction.cardType === 'boss_card' ? 'แย่งบอส' : `ส่งตระกูล ${roomState.pendingAction.targetLetter} ไปเที่ยว`}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                        (คุณสามารถโยนการ์ด **STOP ขัดขวาง** เพื่อยกเลิกดีลนี้ได้!)
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Share divisions overview */}
-                  {roomState.gameState === 'PLAYING' && (
-                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px', marginTop: '6px', textAlign: 'left' }}>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--primary)' }}>💰 ข้อเสนอส่วนแบ่งปัจจุบัน:</span>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '0.7rem', marginTop: '2px' }}>
-                        {roomState.players.map(p => {
-                          if (p.spectating) return null;
-                          const shares = roomState.proposedShares[p.id] || 0;
-                          return (
-                            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', paddingRight: '6px' }}>
-                              <span>• {p.name}:</span>
-                              <span style={{ color: shares > 0 ? '#2ed573' : '#aaa', fontWeight: 'bold' }}>{shares} หุ้น</span>
-                            </div>
-                          );
-                        })}
+                      {/* Required Investors */}
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ต้องการหุ้นส่วน:</span>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          {roomState.currentDeal?.needs.map(letter => {
+                            const isKinsmanPresent = roomState.activeKinsmen.includes(letter);
+                            const isBlocked = roomState.activeTravels.includes(letter);
+                            
+                            let dotClass = `boss-investor-dot investor-${letter}`;
+                            if (isBlocked) dotClass += ' travel-blocked';
+                            
+                            return (
+                              <div key={letter} className={dotClass} style={{ position: 'relative' }}>
+                                {letter}
+                                {isKinsmanPresent && !isBlocked && (
+                                  <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', fontSize: '0.5rem' }}>👶</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
 
-                  {roomState.gameState === 'GAME_OVER' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', textAlign: 'center' }}>
-                      <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--primary)', marginTop: '6px' }}>
-                        🏆 การทำดีลจบลงแล้ว! ตรวจสอบเงินบัญชีผู้ชนะ
-                      </span>
-                      {isHost && (
-                        <button 
-                          className="btn-primary animate-pulse" 
-                          onClick={handleStartGame}
-                          style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
-                        >
-                          🔄 เริ่มใหม่ (Play Again)
-                        </button>
+                      {/* Active Travels or Kinsmen logs */}
+                      {(roomState.activeKinsmen.length > 0 || roomState.activeTravels.length > 0) && (
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '2px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px' }}>
+                          {roomState.activeKinsmen.length > 0 && <span>👶 เล่นลูกหลานแทนแล้ว: {roomState.activeKinsmen.join(', ')}</span>}
+                          {roomState.activeTravels.length > 0 && <span style={{ color: '#ff4757' }}>✈️ ส่งไปเที่ยว/ระงับสิทธิ์: {roomState.activeTravels.join(', ')}</span>}
+                        </div>
                       )}
-                    </div>
+
+                      {/* Countdown Reaction Alert */}
+                      {roomState.gameState === 'INTERRUPTED' && roomState.pendingAction && (
+                        <div style={{ background: 'rgba(255, 71, 87, 0.15)', border: '1px solid rgba(255, 71, 87, 0.3)', borderRadius: '8px', padding: '8px', marginTop: '10px' }}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 'bold' }}>
+                            ⏳ เวลาต่อต้านโต้กลับ: {roomState.pendingAction.timerSeconds} วินาที!
+                          </div>
+                          <div style={{ fontSize: '0.7rem', marginTop: '2px' }}>
+                            <b>{roomState.pendingAction.initiatorName}</b> เล่นการ์ด{' '}
+                            <span style={{ color: 'var(--primary)' }}>
+                              {roomState.pendingAction.cardType === 'boss_card' ? 'แย่งบอส' : `ส่งตระกูล ${roomState.pendingAction.targetLetter} ไปเที่ยว`}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                            (คุณสามารถโยนการ์ด **STOP ขัดขวาง** เพื่อยกเลิกดีลนี้ได้!)
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Share divisions overview */}
+                      {roomState.gameState === 'PLAYING' && (
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px', marginTop: '6px', textAlign: 'left' }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--primary)' }}>💰 ข้อเสนอส่วนแบ่งปัจจุบัน:</span>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '0.7rem', marginTop: '2px' }}>
+                            {roomState.players.map(p => {
+                              if (p.spectating) return null;
+                              const shares = roomState.proposedShares[p.id] || 0;
+                              return (
+                                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', paddingRight: '6px' }}>
+                                  <span>• {p.name}:</span>
+                                  <span style={{ color: shares > 0 ? '#2ed573' : '#aaa', fontWeight: 'bold' }}>{shares} หุ้น</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {roomState.gameState === 'GAME_OVER' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', textAlign: 'center' }}>
+                          <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--primary)', marginTop: '6px' }}>
+                            🏆 การทำดีลจบลงแล้ว! ตรวจสอบเงินบัญชีผู้ชนะ
+                          </span>
+                          {isHost && (
+                            <button 
+                              className="btn-primary animate-pulse" 
+                              onClick={handleStartGame}
+                              style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
+                            >
+                              🔄 เริ่มใหม่ (Play Again)
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -2094,53 +2322,59 @@ function App() {
                 )}
 
                 {/* Center Word & Prompt */}
-                <div className="coup-center-prompt glass" style={{ width: '310px', padding: '16px' }}>
-                  <span className="coup-prompt-title">คำคีย์เวิร์ดของคุณ (Your Word)</span>
-                  
-                  <div style={{ margin: '12px 0', padding: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>คำศัพท์สปาย:</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: myPlayer?.word === '???' ? '#ff4757' : '#2ed573', letterSpacing: '1px' }}>
-                      {myPlayer?.word}
-                    </div>
-                  </div>
-
-                  {roomState.gameState === 'PLAYING' && (
-                    <div className="coup-prompt-desc">
-                      ตาของ <b style={{ color: 'var(--primary)' }}>{roomState.players[roomState.turnIndex]?.name}</b> ในการเขียนคำอธิบาย
-                    </div>
-                  )}
-
-                  {roomState.gameState === 'VOTING' && (
-                    <div className="coup-prompt-desc" style={{ color: 'var(--accent)', fontWeight: 'bold' }}>
-                      🗳️ ช่วงเวลาโหวตจับผิด! คลิกเลือกคนที่มีคำใบ้ต่างจากพวกเพื่อคัดออก
-                    </div>
-                  )}
-
-                  {roomState.gameState === 'MR_WHITE_GUESSING' && (
-                    <div className="coup-prompt-desc" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>
-                      ⏳ กำลังรอให้ Mr. White ทายคำของคนธรรมดา...
-                    </div>
-                  )}
-
-                  {roomState.gameState === 'GAME_OVER' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', textAlign: 'center' }}>
-                      <span style={{ fontSize: '1.05rem', fontWeight: 'bold', color: roomState.winner === 'civilians' ? '#2ed573' : '#ff4757' }}>
-                        {roomState.winner === 'civilians' ? '🎉 ฝั่งคนธรรมดา (Civilians) ชนะ!' : '👽 ฝั่งสายลับ/คนใบ้ ชนะ!'}
-                      </span>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <span>คำของคนธรรมดา: <b>{roomState.civilianWord}</b></span>
-                        <span>คำของสายลับ: <b>{roomState.undercoverWord}</b></span>
+                <div className="coup-center-prompt glass" style={roomState.gameState === 'WAITING' ? { width: '320px', padding: '16px' } : { width: '310px', padding: '16px' }}>
+                  {roomState.gameState === 'WAITING' ? (
+                    renderTableCenterLobby()
+                  ) : (
+                    <>
+                      <span className="coup-prompt-title">คำคีย์เวิร์ดของคุณ (Your Word)</span>
+                      
+                      <div style={{ margin: '12px 0', padding: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>คำศัพท์สปาย:</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: myPlayer?.word === '???' ? '#ff4757' : '#2ed573', letterSpacing: '1px' }}>
+                          {myPlayer?.word}
+                        </div>
                       </div>
-                      {isHost && (
-                        <button 
-                          className="btn-primary animate-pulse" 
-                          onClick={handleStartGame}
-                          style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
-                        >
-                          🔄 เริ่มใหม่ (Play Again)
-                        </button>
+
+                      {roomState.gameState === 'PLAYING' && (
+                        <div className="coup-prompt-desc">
+                          ตาของ <b style={{ color: 'var(--primary)' }}>{roomState.players[roomState.turnIndex]?.name}</b> ในการเขียนคำอธิบาย
+                        </div>
                       )}
-                    </div>
+
+                      {roomState.gameState === 'VOTING' && (
+                        <div className="coup-prompt-desc" style={{ color: 'var(--accent)', fontWeight: 'bold' }}>
+                          🗳️ ช่วงเวลาโหวตจับผิด! คลิกเลือกคนที่มีคำใบ้ต่างจากพวกเพื่อคัดออก
+                        </div>
+                      )}
+
+                      {roomState.gameState === 'MR_WHITE_GUESSING' && (
+                        <div className="coup-prompt-desc" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>
+                          ⏳ กำลังรอให้ Mr. White ทายคำของคนธรรมดา...
+                        </div>
+                      )}
+
+                      {roomState.gameState === 'GAME_OVER' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', textAlign: 'center' }}>
+                          <span style={{ fontSize: '1.05rem', fontWeight: 'bold', color: roomState.winner === 'civilians' ? '#2ed573' : '#ff4757' }}>
+                            {roomState.winner === 'civilians' ? '🎉 ฝั่งคนธรรมดา (Civilians) ชนะ!' : '👽 ฝั่งสายลับ/คนใบ้ ชนะ!'}
+                          </span>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span>คำของคนธรรมดา: <b>{roomState.civilianWord}</b></span>
+                            <span>คำของสายลับ: <b>{roomState.undercoverWord}</b></span>
+                          </div>
+                          {isHost && (
+                            <button 
+                              className="btn-primary animate-pulse" 
+                              onClick={handleStartGame}
+                              style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
+                            >
+                              🔄 เริ่มใหม่ (Play Again)
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -2335,85 +2569,91 @@ function App() {
 
                 {/* Center Word & Timer Display */}
                 <div className="coup-center-prompt glass" style={{ width: '320px', padding: '16px' }}>
-                  <span className="coup-prompt-title">คำปริศนา (Secret Word)</span>
-                  
-                  {/* Timer display */}
-                  {roomState.gameState === 'PLAYING' && (
-                    <div className="insider-timer">
-                      ⏳ {Math.floor(roomState.timerSeconds / 60)}:{(roomState.timerSeconds % 60).toString().padStart(2, '0')}
-                    </div>
-                  )}
-
-                  <div className="coup-prompt-desc" style={{ marginTop: '4px' }}>
-                    หมวดหมู่: <b style={{ color: 'var(--primary)' }}>{roomState.category}</b>
-                  </div>
-
-                  <div style={{ margin: '14px 0', padding: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>คำศัพท์ปริศนา:</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: roomState.targetWord === '???' ? 'var(--text-muted)' : '#2ed573', letterSpacing: '1px' }}>
-                      {roomState.targetWord}
-                    </div>
-                  </div>
-
-                  {/* Guess validation queue (Shown to Master) */}
-                  {roomState.gameState === 'PLAYING' && myPlayer?.role === 'master' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--primary)' }}>👮 แผงควบคุมคำทายของ Master:</span>
+                  {roomState.gameState === 'WAITING' ? (
+                    renderTableCenterLobby()
+                  ) : (
+                    <>
+                      <span className="coup-prompt-title">คำปริศนา (Secret Word)</span>
                       
-                      <div className="insider-guesses-box" ref={insiderGuessesRef}>
-                        {roomState.guesses.length === 0 ? (
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>ยังไม่มีคำทายเข้ามา...</span>
-                        ) : (
-                          roomState.guesses.map((g) => (
-                            <div key={g.id} className={`guess-row ${g.approved === true ? 'approved' : g.approved === false ? 'rejected' : 'pending'}`}>
-                              <span><b>{g.name}:</b> {g.text}</span>
-                              {g.approved === null && (
-                                <div style={{ display: 'flex', gap: '4px' }}>
-                                  <button 
-                                    className="btn-primary" 
-                                    onClick={() => socket.emit('insiderRespondGuess', { guessId: g.id, approved: true })}
-                                    style={{ background: '#2ed573', color: '#000', border: 'none', padding: '2px 6px', fontSize: '0.65rem', borderRadius: '4px', cursor: 'pointer', width: 'auto' }}
-                                  >
-                                    ถูก
-                                  </button>
-                                  <button 
-                                    className="btn-secondary" 
-                                    onClick={() => socket.emit('insiderRespondGuess', { guessId: g.id, approved: false })}
-                                    style={{ background: '#ff4757', color: '#fff', border: 'none', padding: '2px 6px', fontSize: '0.65rem', borderRadius: '4px', cursor: 'pointer', width: 'auto' }}
-                                  >
-                                    ผิด
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Voting Instruction or Game Over details */}
-                  {roomState.gameState === 'VOTING' && (
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      กดที่อวตาร์ผู้เล่นรอบโต๊ะเพื่อเลือกโหวตว่าใครเป็น **Insider**!
-                    </div>
-                  )}
-
-                  {roomState.gameState === 'GAME_OVER' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', textAlign: 'center' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: roomState.winner === 'commoners' ? '#2ed573' : '#ff4757', marginTop: '6px' }}>
-                        {roomState.winner === 'commoners' ? '🎉 ฝั่งคนธรรมดา (Commoners) ชนะ!' : '👽 ฝั่งคนวงใน (Insider) ชนะ!'}
-                      </span>
-                      {isHost && (
-                        <button 
-                          className="btn-primary animate-pulse" 
-                          onClick={handleStartGame}
-                          style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
-                        >
-                          🔄 เริ่มใหม่ (Play Again)
-                        </button>
+                      {/* Timer display */}
+                      {roomState.gameState === 'PLAYING' && (
+                        <div className="insider-timer">
+                          ⏳ {Math.floor(roomState.timerSeconds / 60)}:{(roomState.timerSeconds % 60).toString().padStart(2, '0')}
+                        </div>
                       )}
-                    </div>
+
+                      <div className="coup-prompt-desc" style={{ marginTop: '4px' }}>
+                        หมวดหมู่: <b style={{ color: 'var(--primary)' }}>{roomState.category}</b>
+                      </div>
+
+                      <div style={{ margin: '14px 0', padding: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>คำศัพท์ปริศนา:</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: roomState.targetWord === '???' ? 'var(--text-muted)' : '#2ed573', letterSpacing: '1px' }}>
+                          {roomState.targetWord}
+                        </div>
+                      </div>
+
+                      {/* Guess validation queue (Shown to Master) */}
+                      {roomState.gameState === 'PLAYING' && myPlayer?.role === 'master' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--primary)' }}>👮 แผงควบคุมคำทายของ Master:</span>
+                          
+                          <div className="insider-guesses-box" ref={insiderGuessesRef}>
+                            {roomState.guesses.length === 0 ? (
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>ยังไม่มีคำทายเข้ามา...</span>
+                            ) : (
+                              roomState.guesses.map((g) => (
+                                <div key={g.id} className={`guess-row ${g.approved === true ? 'approved' : g.approved === false ? 'rejected' : 'pending'}`}>
+                                  <span><b>{g.name}:</b> {g.text}</span>
+                                  {g.approved === null && (
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                      <button 
+                                        className="btn-primary" 
+                                        onClick={() => socket.emit('insiderRespondGuess', { guessId: g.id, approved: true })}
+                                        style={{ background: '#2ed573', color: '#000', border: 'none', padding: '2px 6px', fontSize: '0.65rem', borderRadius: '4px', cursor: 'pointer', width: 'auto' }}
+                                      >
+                                        ถูก
+                                      </button>
+                                      <button 
+                                        className="btn-secondary" 
+                                        onClick={() => socket.emit('insiderRespondGuess', { guessId: g.id, approved: false })}
+                                        style={{ background: '#ff4757', color: '#fff', border: 'none', padding: '2px 6px', fontSize: '0.65rem', borderRadius: '4px', cursor: 'pointer', width: 'auto' }}
+                                      >
+                                        ผิด
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Voting Instruction or Game Over details */}
+                      {roomState.gameState === 'VOTING' && (
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          กดที่อวตาร์ผู้เล่นรอบโต๊ะเพื่อเลือกโหวตว่าใครเป็น **Insider**!
+                        </div>
+                      )}
+
+                      {roomState.gameState === 'GAME_OVER' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', textAlign: 'center' }}>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: roomState.winner === 'commoners' ? '#2ed573' : '#ff4757', marginTop: '6px' }}>
+                            {roomState.winner === 'commoners' ? '🎉 ฝั่งคนธรรมดา (Commoners) ชนะ!' : '👽 ฝั่งคนวงใน (Insider) ชนะ!'}
+                          </span>
+                          {isHost && (
+                            <button 
+                              className="btn-primary animate-pulse" 
+                              onClick={handleStartGame}
+                              style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
+                            >
+                              🔄 เริ่มใหม่ (Play Again)
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -2561,64 +2801,70 @@ function App() {
                 )}
 
                 {/* Center response / prompt card */}
-                <div className="coup-center-prompt glass" style={{ width: '310px' }}>
-                  <span className="coup-prompt-title">
-                    {roomState.gameState === 'PLAYING' ? 'กำลังเล่น (Playing)' : 
-                     roomState.gameState === 'WAITING_RESPONSE' ? 'ดวลเดือด (Duel)' :
-                     roomState.gameState === 'GAME_OVER' ? 'จบเกมดวลปืน' : ''}
-                  </span>
-
-                  {roomState.gameState === 'PLAYING' && (
-                    <div className="coup-prompt-desc">
-                      ตาของ <b style={{ color: 'var(--primary)' }}>{roomState.players[roomState.turnIndex]?.name}</b> กำลังเลือกการ์ดเล่น...
-                    </div>
-                  )}
-
-                  {roomState.gameState === 'WAITING_RESPONSE' && roomState.pendingResponse && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div className="coup-prompt-desc">
-                        {roomState.pendingResponse.playerId === socket.id ? (
-                          <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>
-                            ⚠️ คุณตกเป็นเป้าหมาย! โดน {roomState.pendingResponse.attackCardType.toUpperCase()}
-                            {roomState.pendingResponse.type === 'missed' ? ' (ต้องการการ์ด หลบ/Missed)' : ' (ต้องการการ์ด ยิง/Bang)'}
-                          </span>
-                        ) : (
-                          <span>
-                            รอ <b>{roomState.players.find(p => p.id === roomState.pendingResponse.playerId)?.name}</b> ป้องกันตัวจากการโจมตี...
-                          </span>
-                        )}
-                      </div>
-                      
-                      {roomState.pendingResponse.playerId === socket.id && (
-                        <button 
-                          className="btn-primary" 
-                          onClick={() => socket.emit('bangRespond', { cardId: null })}
-                          style={{ background: '#ff4757', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer' }}
-                        >
-                          💥 ยอมรับกระสุน (-1 เลือด)
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {roomState.gameState === 'GAME_OVER' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', textAlign: 'center' }}>
-                      <span style={{ color: 'var(--primary)', fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        🏆 ฝ่าย {roomState.winnerRole === 'law' ? 'ผู้พิทักษ์กฎหมาย 🤠' : roomState.winnerRole === 'outlaws' ? 'กลุ่มนอกกฎหมาย 💀' : 'คนทรยศ 🐍'} ชนะ!
+                <div className="coup-center-prompt glass" style={roomState.gameState === 'WAITING' ? { width: '320px', padding: '16px' } : { width: '310px' }}>
+                  {roomState.gameState === 'WAITING' ? (
+                    renderTableCenterLobby()
+                  ) : (
+                    <>
+                      <span className="coup-prompt-title">
+                        {roomState.gameState === 'PLAYING' ? 'กำลังเล่น (Playing)' : 
+                         roomState.gameState === 'WAITING_RESPONSE' ? 'ดวลเดือด (Duel)' :
+                         roomState.gameState === 'GAME_OVER' ? 'จบเกมดวลปืน' : ''}
                       </span>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        การประลองฝุ่นตลบจบลงแล้ว
-                      </span>
-                      {isHost && (
-                        <button 
-                          className="btn-primary animate-pulse" 
-                          onClick={handleStartGame}
-                          style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
-                        >
-                          🔄 เริ่มใหม่ (Play Again)
-                        </button>
+
+                      {roomState.gameState === 'PLAYING' && (
+                        <div className="coup-prompt-desc">
+                          ตาของ <b style={{ color: 'var(--primary)' }}>{roomState.players[roomState.turnIndex]?.name}</b> กำลังเลือกการ์ดเล่น...
+                        </div>
                       )}
-                    </div>
+
+                      {roomState.gameState === 'WAITING_RESPONSE' && roomState.pendingResponse && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          <div className="coup-prompt-desc">
+                            {roomState.pendingResponse.playerId === socket.id ? (
+                              <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>
+                                ⚠️ คุณตกเป็นเป้าหมาย! โดน {roomState.pendingResponse.attackCardType.toUpperCase()}
+                                {roomState.pendingResponse.type === 'missed' ? ' (ต้องการการ์ด หลบ/Missed)' : ' (ต้องการการ์ด ยิง/Bang)'}
+                              </span>
+                            ) : (
+                              <span>
+                                รอ <b>{roomState.players.find(p => p.id === roomState.pendingResponse.playerId)?.name}</b> ป้องกันตัวจากการโจมตี...
+                              </span>
+                            )}
+                          </div>
+                          
+                          {roomState.pendingResponse.playerId === socket.id && (
+                            <button 
+                              className="btn-primary" 
+                              onClick={() => socket.emit('bangRespond', { cardId: null })}
+                              style={{ background: '#ff4757', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer' }}
+                            >
+                              💥 ยอมรับกระสุน (-1 เลือด)
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {roomState.gameState === 'GAME_OVER' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', textAlign: 'center' }}>
+                          <span style={{ color: 'var(--primary)', fontSize: '1.1rem', fontWeight: 'bold' }}>
+                            🏆 ฝ่าย {roomState.winnerRole === 'law' ? 'ผู้พิทักษ์กฎหมาย 🤠' : roomState.winnerRole === 'outlaws' ? 'กลุ่มนอกกฎหมาย 💀' : 'คนทรยศ 🐍'} ชนะ!
+                          </span>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            การประลองฝุ่นตลบจบลงแล้ว
+                          </span>
+                          {isHost && (
+                            <button 
+                              className="btn-primary animate-pulse" 
+                              onClick={handleStartGame}
+                              style={{ width: 'auto', padding: '8px 20px', marginTop: '10px' }}
+                            >
+                              🔄 เริ่มใหม่ (Play Again)
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -2860,24 +3106,30 @@ function App() {
             <div className="table-container-wrapper">
 <div className="poker-table-container">
               <div className="poker-table">
-                <div className="table-center">
-                  {/* Pot display */}
-                  <div className="pot-display">
-                    <span>POT:</span>
-                    <span className="pot-amount">{roomState.pot} chips</span>
+                {roomState.gameState === 'WAITING' ? (
+                  <div className="coup-center-prompt glass" style={{ width: '320px', padding: '16px', zIndex: 10 }}>
+                    {renderTableCenterLobby()}
                   </div>
+                ) : (
+                  <div className="table-center">
+                    {/* Pot display */}
+                    <div className="pot-display">
+                      <span>POT:</span>
+                      <span className="pot-amount">{roomState.pot} chips</span>
+                    </div>
 
-                  {/* Board community cards */}
-                  <div className="board-cards">
-                    {roomState.communityCards.map((card, idx) => (
-                      <Card key={idx} rank={card.rank} suit={card.suit} isDealt={true} />
-                    ))}
-                    {/* Visual placeholders for remaining cards */}
-                    {Array.from({ length: 5 - roomState.communityCards.length }).map((_, idx) => (
-                      <div key={idx} className="poker-card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' }} />
-                    ))}
+                    {/* Board community cards */}
+                    <div className="board-cards">
+                      {roomState.communityCards.map((card, idx) => (
+                        <Card key={idx} rank={card.rank} suit={card.suit} isDealt={true} />
+                      ))}
+                      {/* Visual placeholders for remaining cards */}
+                      {Array.from({ length: 5 - roomState.communityCards.length }).map((_, idx) => (
+                        <div key={idx} className="poker-card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' }} />
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Last Action display */}
                 {roomState.lastAction && (
@@ -3055,9 +3307,16 @@ function App() {
             {/* Sidebar User Profile & Refill Panel */}
             <div className="glass" style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '6px', background: 'rgba(0,0,0,0.15)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  👤 {userProfile ? userProfile.username : name || 'ผู้มาเยือน'}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {myPlayer?.avatar ? (
+                    <span style={{ fontSize: '1.1rem' }}>{myPlayer.avatar}</span>
+                  ) : (
+                    <span>👤</span>
+                  )}
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>
+                    {userProfile ? userProfile.username : name || 'ผู้มาเยือน'}
+                  </span>
+                </div>
                 <span style={{ fontSize: '0.8rem', color: '#2ed573', fontWeight: 'bold' }}>
                   🪙 {userProfile ? `${userProfile.chips.toLocaleString()} ชิป` : myPlayer ? `${myPlayer.chips.toLocaleString()} ชิป` : '0 ชิป'}
                 </span>
@@ -3093,57 +3352,36 @@ function App() {
 
 
 
-        {roomState.gameState === 'WAITING' && (
-          <div className="slots-container glass" style={{ border: 'none', borderBottom: '1px solid var(--border-card)', borderRadius: 0, margin: 0, width: '100%', maxWidth: 'none' }}>
-            <div className="slots-title">🎰 มินิสล็อตชิงรางวัล (Lobby Slots)</div>
-            
-            {/* Reels */}
-            <div className="slots-reels">
-              {slotReels.map((symbol, idx) => (
-                <div key={idx} className={`slots-reel ${slotSpinning ? 'spinning' : ''}`}>
-                  {slotSpinning ? ['🍒', '🍋', '7️⃣', '💎'][Math.floor(Math.random() * 4)] : symbol}
-                </div>
-              ))}
-            </div>
-
-            {/* Bet buttons and Spin button */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center', marginTop: '10px' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>เดิมพัน:</span>
-              <select 
-                value={slotBet} 
-                onChange={(e) => setSlotBet(Number(e.target.value))}
-                disabled={slotSpinning}
-                style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.75rem', borderRadius: '4px', padding: '2px 4px' }}
-              >
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-                <option value={200}>200</option>
-                <option value={500}>500</option>
-              </select>
-
-              <button 
-                className="btn-primary"
-                onClick={() => socket.emit('lobbySpinSlots', { bet: slotBet })}
-                disabled={slotSpinning || (myPlayer?.chips && myPlayer.chips < slotBet)}
-                style={{ width: 'auto', margin: 0, padding: '4px 14px', fontSize: '0.75rem', borderRadius: '6px' }}
-              >
-                {slotSpinning ? 'กำลังหมุน...' : 'SPIN 🎰'}
-              </button>
-            </div>
-
-            {/* Win/Loss message */}
-            {slotWinMessage && (
-              <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: slotWinMessage.includes('ชนะ') ? '#2ed573' : '#ff4757', marginTop: '8px' }}>
-                {slotWinMessage}
-              </div>
-            )}
-          </div>
-        )}
-
         <div className="chat-header">
           <span>สนทนากับเพื่อน</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="active-count">ออนไลน์: {roomState.players.filter(p => p.isOnline).length}</span>
+            <button 
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setChatMaximized(!chatMaximized);
+              }}
+              className="chat-maximize-btn"
+              title={chatMaximized ? "ย่อขนาดแชท" : "ขยายขนาดแชท"}
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '6px',
+                color: 'var(--text-muted)',
+                padding: '2px 4px',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '24px',
+                width: '24px',
+                transition: 'color 0.2s'
+              }}
+            >
+              {chatMaximized ? '🗕' : '🗖'}
+            </button>
             <button 
               type="button"
               onClick={(e) => {

@@ -2082,3 +2082,30 @@
 .suit-black {
   color: #1e272e !important; /* Premium rich slate black */
 }
+
+/* Maximize Chat Sidebar Styles */
+.game-layout.chat-maximized {
+  grid-template-columns: 1fr 480px;
+}
+
+@media (max-width: 1024px) {
+  .game-layout.chat-maximized {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 65vh;
+  }
+}
+
+.chat-maximize-btn:hover {
+  color: var(--primary) !important;
+}
+
+/* Custom profile frame colors */
+.frame-neon-green {
+  border: 3px solid #2ecc71 !important;
+  box-shadow: 0 0 10px #2ecc71, inset 0 0 5px #2ecc71 !important;
+}
+
+.frame-cyber-blue {
+  border: 3px solid #00d2d3 !important;
+  box-shadow: 0 0 10px #00d2d3, inset 0 0 5px #00d2d3 !important;
+}
