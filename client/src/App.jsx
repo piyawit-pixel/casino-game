@@ -1391,7 +1391,7 @@ function App() {
     const betX = 50 + 21 * Math.cos(angle);
     const betY = 50 + 17 * Math.sin(angle);
 
-    const isTurn = roomState.currentTurnIndex !== null && roomState.players[roomState.currentTurnIndex]?.id === player.id;
+    const isTurn = activeTurnIndex !== null && activeTurnIndex !== undefined && roomState.players[activeTurnIndex]?.id === player.id;
     const isDealer = roomState.dealerIndex !== null && roomState.players[roomState.dealerIndex]?.id === player.id;
 
     return {

@@ -445,6 +445,7 @@ export class UnoRoom {
   }
 
   moveToNextTurn(steps = 1) {
+    this.recentlyDrawnCard = null;
     const activePlayers = this.players.filter(p => !p.spectating);
     if (activePlayers.length <= 1) {
       this.checkWinCondition();
