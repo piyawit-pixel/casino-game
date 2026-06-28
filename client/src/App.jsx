@@ -258,6 +258,7 @@ function App() {
   const [roomIdInput, setRoomIdInput] = useState('');
   const [roomPassword, setRoomPassword] = useState('');
   const [joinPassword, setJoinPassword] = useState('');
+  const [activeRooms, setActiveRooms] = useState([]);
   const [name, setName] = useState('');
   const [joined, setJoined] = useState(false);
   const [roomState, setRoomState] = useState(null);
@@ -476,6 +477,10 @@ function App() {
       }, 1200);
     });
 
+    newSocket.on('roomListUpdate', (list) => {
+      setActiveRooms(list);
+    });
+
     return () => {
       newSocket.disconnect();
     };
@@ -539,6 +544,35 @@ function App() {
       socket.emit('joinRoom', { roomId: roomIdInput, name, password: joinPassword });
     } else {
       setErrorMsg('Please enter your name and Room ID.');
+    }
+  };
+
+  const handleQuickJoin = (room) => {
+    const playerName = name.trim();
+    if (!playerName) {
+      const inputtedName = prompt('กรุณาใส่ชื่อผู้เล่นของคุณก่อนเข้าร่วมห้อง:');
+      if (!inputtedName || !inputtedName.trim()) {
+        setErrorMsg('กรุณากรอกชื่อผู้เล่นก่อนเข้าร่วมห้อง');
+        return;
+      }
+      const finalName = inputtedName.trim();
+      setName(finalName);
+      joinRoomWithDetails(room, finalName);
+    } else {
+      joinRoomWithDetails(room, playerName);
+    }
+  };
+
+  const joinRoomWithDetails = (room, pName) => {
+    setRoomIdInput(room.roomId);
+    if (room.hasPassword) {
+      const pw = prompt('ห้องนี้มีรหัสผ่าน กรุณากรอกรหัสผ่านเพื่อเข้าร่วม:');
+      if (pw !== null) {
+        setJoinPassword(pw);
+        socket.emit('joinRoom', { roomId: room.roomId, name: pName, password: pw });
+      }
+    } else {
+      socket.emit('joinRoom', { roomId: room.roomId, name: pName });
     }
   };
 
@@ -946,8 +980,8 @@ function App() {
   // If not in a room yet, render Lobby
   if (!joined || !roomState) {
     return (
-      <div className="lobby-container">
-        <div className="lobby-card glass">
+      <div className="lobby-container" style={{ display: 'flex', flexDirection: 'row', gap: '30px', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'flex-start', padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div className="lobby-card glass" style={{ flex: '1 1 450px', maxWidth: '550px', margin: 0 }}>
           <h1 className="lobby-title animate-float">🎲 TABLETOP FRIENDS 👑</h1>
           <p className="lobby-subtitle" style={{ marginBottom: '24px' }}>ห้องรวมบอร์ดเกมออนไลน์ เล่นสนุกกับกลุ่มเพื่อนแบบพรีเมียม</p>
 
@@ -1233,6 +1267,93 @@ function App() {
               </form>
             </>
           )}
+        </div>
+
+        {/* Room Browser Card */}
+        <div className="lobby-card glass" style={{ flex: '1 1 450px', maxWidth: '550px', display: 'flex', flexDirection: 'column', gap: '16px', margin: 0, textAlign: 'left', minHeight: '400px' }}>
+          <h2 style={{ fontSize: '1.25rem', color: 'var(--primary)', fontWeight: 'bold', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '10px', marginTop: 0 }}>
+            🌐 ห้องเกมที่กำลังเปิดอยู่ (Active Game Rooms)
+          </h2>
+          
+          <div className="room-list-container" style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '550px', paddingRight: '4px' }}>
+            {activeRooms.length === 0 ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                📡 ยังไม่มีห้องที่เปิดอยู่ตอนนี้<br />
+                <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>มาร่วมสร้างห้องใหม่เป็นคนแรกกันเลย!</span>
+              </div>
+            ) : (
+              activeRooms.map((room) => {
+                const gameInfo = GAME_DETAILS[room.gameType] || { title: room.gameType };
+                return (
+                  <div 
+                    key={room.roomId} 
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '12px',
+                      padding: '12px 16px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      transition: 'all 0.2s',
+                      cursor: 'pointer'
+                    }}
+                    className="room-browser-item"
+                    onClick={() => handleQuickJoin(room)}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>
+                          🔑 {room.roomId}
+                        </span>
+                        {room.hasPassword && (
+                          <span style={{ fontSize: '0.8rem', color: '#ffa502' }} title="ห้องนี้มีรหัสผ่าน">🔒</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                        เกม: {gameInfo.title.substring(gameInfo.title.indexOf(' ') + 1)}
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '2px' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--primary)', background: 'rgba(255, 183, 3, 0.12)', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                          👥 {room.playersCount} คน
+                        </span>
+                        <span style={{ 
+                          fontSize: '0.72rem', 
+                          color: room.gameState === 'WAITING' ? '#2ed573' : '#ff9f43',
+                          background: room.gameState === 'WAITING' ? 'rgba(46, 213, 115, 0.12)' : 'rgba(255, 159, 67, 0.12)',
+                          padding: '1px 6px', 
+                          borderRadius: '4px',
+                          fontWeight: 'bold'
+                        }}>
+                          {room.gameState === 'WAITING' ? 'กำลังรอผู้เล่น' : 'กำลังเล่นอยู่'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button 
+                      className="btn-primary"
+                      style={{ 
+                        width: 'auto', 
+                        margin: 0, 
+                        padding: '6px 14px', 
+                        fontSize: '0.78rem', 
+                        borderRadius: '8px',
+                        background: 'linear-gradient(135deg, #2ed573, #26af5f)',
+                        border: 'none',
+                        boxShadow: '0 4px 10px rgba(46, 213, 115, 0.2)'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQuickJoin(room);
+                      }}
+                    >
+                      เข้าร่วม 🚀
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
     );

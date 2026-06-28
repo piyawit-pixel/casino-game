@@ -107,6 +107,27 @@ async function broadcastRoomState(roomId) {
       io.to(p.id).emit('roomState', room.getClientState(p.id));
     }
   });
+
+  // Update lobby room list
+  broadcastRoomList();
+}
+
+function getActiveRoomsList() {
+  const list = [];
+  for (const [roomId, room] of rooms.entries()) {
+    list.push({
+      roomId,
+      gameType: room.gameType,
+      playersCount: room.players ? room.players.filter(p => p.isOnline).length : 0,
+      gameState: room.gameState,
+      hasPassword: !!room.password
+    });
+  }
+  return list;
+}
+
+function broadcastRoomList() {
+  io.emit('roomListUpdate', getActiveRoomsList());
 }
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
@@ -126,6 +147,9 @@ io.on('connection', (socket) => {
   let playerProfile = null;
 
   console.log(`Socket connected: ${socket.id} (Authenticated: ${socket.username || 'No'})`);
+
+  // Emit current active rooms list on connection
+  socket.emit('roomListUpdate', getActiveRoomsList());
 
   // Create a new room
   socket.on('createRoom', async ({ name, gameType, password }) => {
@@ -760,6 +784,7 @@ io.on('connection', (socket) => {
         if (!anyPlayersLeft) {
           console.log(`Room ${currentRoomId} is empty. Cleaning up.`);
           rooms.delete(currentRoomId);
+          broadcastRoomList();
         } else {
           // Verify that there is at least one online host
           const hostOnline = room.players.find(p => p.isOnline && p.isHost);
@@ -791,6 +816,7 @@ io.on('connection', (socket) => {
         if (!anyPlayersLeft) {
           console.log(`Room ${currentRoomId} is empty. Cleaning up.`);
           rooms.delete(currentRoomId);
+          broadcastRoomList();
         } else {
           // Verify that there is at least one online host
           const hostOnline = room.players.find(p => p.isOnline && p.isHost);
