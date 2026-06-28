@@ -1554,117 +1554,116 @@ function App() {
 
         {roomState.gameType === 'checkers' ? (
           <div className="table-container-wrapper">
-<div className="checkers-board-wrapper">
-            {/* Checkers Info Bar */}
-            <div className="checkers-info-bar">
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <span style={{ color: '#ff5252' }}>
-                  🔴 แดง: {roomState.players.find(p => p.color === 'red')?.name || 'ว่าง'}
-                </span>
-                <span style={{ color: '#a0a0a0' }}>VS</span>
-                <span style={{ color: '#ffffff' }}>
-                  ⚫ ดำ: {roomState.players.find(p => p.color === 'black')?.name || 'ว่าง'}
-                </span>
-              </div>
-              
-              <div className="checkers-active-turn">
-                {roomState.gameState === 'PLAYING' && (
-                  <>
-                    <span className={`checkers-turn-dot ${roomState.turn === 'red' ? 'dot-red' : 'dot-black'}`}></span>
-                    <span>ตาของ: {roomState.turn === 'red' ? 'สีแดง' : 'สีดำ'}</span>
-                  </>
-                )}
-                {roomState.gameState === 'WAITING' && <span>รอเริ่มเกม</span>}
-                {roomState.gameState === 'GAME_OVER' && (
-                  <span style={{ color: 'var(--accent-blue)' }}>
-                    🎉 {roomState.winner === 'red' ? 'สีแดงชนะ!' : 'สีดำชนะ!'}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Checkers Board Grid */}
-            <div className="checkers-board">
-              {[7, 6, 5, 4, 3, 2, 1, 0].map(r => (
-                [0, 1, 2, 3, 4, 5, 6, 7].map(c => {
-                  const piece = roomState.board[r][c];
-                  const isDarkSquare = (r + c) % 2 === 1;
-                  const isSelected = selectedSquare && selectedSquare.row === r && selectedSquare.col === c;
-                  
-                  // Filter valid moves
-                  const activeMovesForSelectedPiece = selectedSquare
-                    ? (roomState.validMoves || []).filter(m => m.from.row === selectedSquare.row && m.from.col === selectedSquare.col)
-                    : [];
-                  
-                  const isDest = activeMovesForSelectedPiece.some(m => m.to.row === r && m.to.col === c);
-                  
-                  const isLastMoveSquare = roomState.lastMove && (
-                    (roomState.lastMove.from.row === r && roomState.lastMove.from.col === c) ||
-                    (roomState.lastMove.to.row === r && roomState.lastMove.to.col === c)
-                  );
-
-                  let squareClass = `checkers-square ${isDarkSquare ? 'square-dark' : 'square-light'}`;
-                  if (isDest) squareClass += ' square-highlight';
-                  else if (isLastMoveSquare) squareClass += ' square-last-move';
-
-                  const handleSquareClick = () => {
-                    if (roomState.gameState !== 'PLAYING') return;
-
-                    // If clicking a highlighted destination, make the move
-                    if (isDest) {
-                      socket.emit('makeMove', { from: selectedSquare, to: { row: r, col: c } });
-                      setSelectedSquare(null);
-                      return;
-                    }
-
-                    // Otherwise check if clicking own piece to select
-                    if (piece && piece.color === myPlayer?.color) {
-                      const hasMoves = (roomState.validMoves || []).some(m => m.from.row === r && m.from.col === c);
-                      if (hasMoves) {
-                        setSelectedSquare({ row: r, col: c });
-                      } else {
-                        setSelectedSquare(null);
-                      }
-                    } else {
-                      setSelectedSquare(null);
-                    }
-                  };
-
-                  return (
-                    <div 
-                      key={`${r}-${c}`} 
-                      className={squareClass}
-                      onClick={handleSquareClick}
-                    >
-                      {/* Render Piece */}
-                      {piece && (
-                        <div className={`checkers-piece ${piece.color === 'red' ? 'piece-red' : 'piece-black'} ${piece.type === 'king' ? 'piece-king' : ''} ${isSelected ? 'piece-selected' : ''}`} />
-                      )}
-                    </div>
-                  );
-                })
-              ))}
-            </div>
-
-            {/* Checkers Game Over / Lobby buttons */}
-            {roomState.gameState === 'GAME_OVER' && (
-              <div style={{ textAlign: 'center', marginTop: '10px' }}>
-                <h3 style={{ color: 'var(--primary)', marginBottom: '8px' }}>เกมจบลงแล้ว!</h3>
-                {isHost && (
-                  <button className="host-btn" onClick={handleStartGame}>
-                    เริ่มใหม่ (Play Again)
-                  </button>
-                )}
-              </div>
-            )}
-            
-            {roomState.gameState === 'WAITING' && (
-              <div className="coup-center-prompt glass" style={{ width: '320px', padding: '16px', margin: '20px auto', textAlign: 'center' }}>
+            {roomState.gameState === 'WAITING' ? (
+              <div className="coup-center-prompt glass" style={{ width: '320px', padding: '16px', margin: '20px auto', zIndex: 10 }}>
                 {renderTableCenterLobby()}
+              </div>
+            ) : (
+              <div className="checkers-board-wrapper">
+                {/* Checkers Info Bar */}
+                <div className="checkers-info-bar">
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <span style={{ color: '#ff5252' }}>
+                      🔴 แดง: {roomState.players.find(p => p.color === 'red')?.name || 'ว่าง'}
+                    </span>
+                    <span style={{ color: '#a0a0a0' }}>VS</span>
+                    <span style={{ color: '#ffffff' }}>
+                      ⚫ ดำ: {roomState.players.find(p => p.color === 'black')?.name || 'ว่าง'}
+                    </span>
+                  </div>
+                  
+                  <div className="checkers-active-turn">
+                    {roomState.gameState === 'PLAYING' && (
+                      <>
+                        <span className={`checkers-turn-dot ${roomState.turn === 'red' ? 'dot-red' : 'dot-black'}`}></span>
+                        <span>ตาของ: {roomState.turn === 'red' ? 'สีแดง' : 'สีดำ'}</span>
+                      </>
+                    )}
+                    {roomState.gameState === 'GAME_OVER' && (
+                      <span style={{ color: 'var(--accent-blue)' }}>
+                        🎉 {roomState.winner === 'red' ? 'สีแดงชนะ!' : 'สีดำชนะ!'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Checkers Board Grid */}
+                <div className="checkers-board">
+                  {[7, 6, 5, 4, 3, 2, 1, 0].map(r => (
+                    [0, 1, 2, 3, 4, 5, 6, 7].map(c => {
+                      const piece = roomState.board[r][c];
+                      const isDarkSquare = (r + c) % 2 === 1;
+                      const isSelected = selectedSquare && selectedSquare.row === r && selectedSquare.col === c;
+                      
+                      // Filter valid moves
+                      const activeMovesForSelectedPiece = selectedSquare
+                        ? (roomState.validMoves || []).filter(m => m.from.row === selectedSquare.row && m.from.col === selectedSquare.col)
+                        : [];
+                      
+                      const isDest = activeMovesForSelectedPiece.some(m => m.to.row === r && m.to.col === c);
+                      
+                      const isLastMoveSquare = roomState.lastMove && (
+                        (roomState.lastMove.from.row === r && roomState.lastMove.from.col === c) ||
+                        (roomState.lastMove.to.row === r && roomState.lastMove.to.col === c)
+                      );
+
+                      let squareClass = `checkers-square ${isDarkSquare ? 'square-dark' : 'square-light'}`;
+                      if (isDest) squareClass += ' square-highlight';
+                      else if (isLastMoveSquare) squareClass += ' square-last-move';
+
+                      const handleSquareClick = () => {
+                        if (roomState.gameState !== 'PLAYING') return;
+
+                        // If clicking a highlighted destination, make the move
+                        if (isDest) {
+                          socket.emit('makeMove', { from: selectedSquare, to: { row: r, col: c } });
+                          setSelectedSquare(null);
+                          return;
+                        }
+
+                        // Otherwise check if clicking own piece to select
+                        if (piece && piece.color === myPlayer?.color) {
+                          const hasMoves = (roomState.validMoves || []).some(m => m.from.row === r && m.from.col === c);
+                          if (hasMoves) {
+                            setSelectedSquare({ row: r, col: c });
+                          } else {
+                            setSelectedSquare(null);
+                          }
+                        } else {
+                          setSelectedSquare(null);
+                        }
+                      };
+
+                      return (
+                        <div 
+                          key={`${r}-${c}`} 
+                          className={squareClass}
+                          onClick={handleSquareClick}
+                        >
+                          {/* Render Piece */}
+                          {piece && (
+                            <div className={`checkers-piece ${piece.color === 'red' ? 'piece-red' : 'piece-black'} ${piece.type === 'king' ? 'piece-king' : ''} ${isSelected ? 'piece-selected' : ''}`} />
+                          )}
+                        </div>
+                      );
+                    })
+                  ))}
+                </div>
+
+                {/* Checkers Game Over / Lobby buttons */}
+                {roomState.gameState === 'GAME_OVER' && (
+                  <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                    <h3 style={{ color: 'var(--primary)', marginBottom: '8px' }}>เกมจบลงแล้ว!</h3>
+                    {isHost && (
+                      <button className="host-btn" onClick={handleStartGame}>
+                        เริ่มใหม่ (Play Again)
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
-</div>
         ) : roomState.gameType === 'coup' ? (
           <>
             {/* The Coup Table container */}
@@ -1842,37 +1841,39 @@ function App() {
                 )}
 
                 {/* Center Piles */}
-                <div className="uno-center-pile">
-                  {/* Draw Pile (Card back) */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                    <div 
-                      className="uno-card uno-card-back" 
-                      onClick={() => {
-                        const isMyTurn = roomState.players[roomState.turnIndex]?.id === socket.id;
-                        if (isMyTurn && roomState.gameState === 'PLAYING' && !roomState.recentlyDrawnCard) {
-                          socket.emit('unoDrawCard');
-                        }
-                      }}
-                      style={{ cursor: roomState.players[roomState.turnIndex]?.id === socket.id && roomState.gameState === 'PLAYING' && !roomState.recentlyDrawnCard ? 'pointer' : 'default' }}
-                    >
-                    </div>
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>กองจั่ว (Draw)</span>
-                  </div>
-
-                  {/* Discard Pile */}
-                  {roomState.currentCard && (
+                {roomState.gameState !== 'WAITING' && (
+                  <div className="uno-center-pile">
+                    {/* Draw Pile (Card back) */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                      <UnoCard color={roomState.currentColor} type={roomState.currentType} isSelectable={false} />
-                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                        สีปัจจุบัน: 
-                        <span 
-                          className={`uno-active-color-indicator color-dot-${roomState.currentColor}`} 
-                          style={{ marginLeft: '4px', verticalAlign: 'middle' }}
-                        />
-                      </span>
+                      <div 
+                        className="uno-card uno-card-back" 
+                        onClick={() => {
+                          const isMyTurn = roomState.players[roomState.turnIndex]?.id === socket.id;
+                          if (isMyTurn && roomState.gameState === 'PLAYING' && !roomState.recentlyDrawnCard) {
+                            socket.emit('unoDrawCard');
+                          }
+                        }}
+                        style={{ cursor: roomState.players[roomState.turnIndex]?.id === socket.id && roomState.gameState === 'PLAYING' && !roomState.recentlyDrawnCard ? 'pointer' : 'default' }}
+                      >
+                      </div>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>กองจั่ว (Draw)</span>
                     </div>
-                  )}
-                </div>
+
+                    {/* Discard Pile */}
+                    {roomState.currentCard && (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                        <UnoCard color={roomState.currentColor} type={roomState.currentType} isSelectable={false} />
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                          สีปัจจุบัน: 
+                          <span 
+                            className={`uno-active-color-indicator color-dot-${roomState.currentColor}`} 
+                            style={{ marginLeft: '4px', verticalAlign: 'middle' }}
+                          />
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Uno Lobby Wait Popup */}
                 {roomState.gameState === 'WAITING' && (
